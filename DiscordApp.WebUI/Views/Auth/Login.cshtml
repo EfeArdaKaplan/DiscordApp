@@ -1,0 +1,52 @@
+@model DiscordApp.WebUI.Models.LoginViewModel
+@{
+    ViewData["Title"] = "Giriş";
+    Layout = "_Layout";
+}
+
+<div id="page-landing" class="page">
+  <div class="center">
+    <div class="card-wrap">
+      <div class="logo">YS</div>
+      <h1 class="title-h1">Yerel Sohbet</h1>
+      <p class="subtitle">Buluta çıkmayan, tamamen bu makinede çalışan çete sohbeti.</p>
+      <div class="card">
+        <form id="loginForm" asp-controller="Auth" asp-action="Login" method="post" novalidate>
+          @Html.AntiForgeryToken()
+
+          <div class="form-group" id="group-loginEmail">
+            <label class="field-label">E-posta</label>
+            <div class="field">
+              <span class="icon">✉️</span>
+              <input name="Email" id="loginEmailInput" type="email" value="@Model?.Email" placeholder="ör. sofia@@ornek.com" />
+            </div>
+            <ul class="error-list" id="err-loginEmail"></ul>
+          </div>
+
+          <div class="form-group" id="group-loginPassword">
+            <label class="field-label">Parola</label>
+            <div class="field">
+              <span class="icon">🔒</span>
+              <input name="Password" id="loginPassInput" type="password" placeholder="••••••••" />
+            </div>
+            <ul class="error-list" id="err-loginPassword"></ul>
+          </div>
+
+          <button type="submit" class="btn-primary">Sohbete gir →</button>
+        </form>
+      </div>
+      <p class="hint">Hesabın yok mu? <a asp-controller="Auth" asp-action="Register" style="color:var(--accent);text-decoration:none;font-weight:500;">Kayıt ol</a></p>
+    </div>
+  </div>
+  <div class="console">
+    <span><span style="color:var(--mint)">▸</span> yerel://localhost:4000</span>
+    <span class="right" style="display:flex">
+      <span>📶 p2p bağlantı bekleniyor</span>
+      <span class="hide-mobile">🛡 sunucu bulutta değil</span>
+    </span>
+  </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/login.js"></script>
+}

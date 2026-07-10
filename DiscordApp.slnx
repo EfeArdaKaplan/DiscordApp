@@ -3,4 +3,5 @@
   <Project Path="Core/Core.csproj" />
   <Project Path="Data/Data.csproj" />
   <Project Path="DiscordApp.WebApi/DiscordApp.WebApi.csproj" />
+  <Project Path="DiscordApp.WebUI/DiscordApp.WebUI.csproj" Id="5557f782-aae8-4466-9e99-26cd4041e59a" />
 </Solution>

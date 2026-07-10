@@ -1,0 +1,178 @@
+@{
+    ViewData["Title"] = "Sohbet";
+    Layout = "_Layout";
+    var displayName = ViewData["UserName"]?.ToString() ?? "Kullanıcı";
+    var userInitials = string.Concat(displayName.Split(' ').Where(w => w.Length > 0).Select(w => char.ToUpper(w[0]))).PadRight(1, 'K');
+    if (userInitials.Length > 2) userInitials = userInitials.Substring(0, 2);
+}
+@using System.Linq
+
+<div id="page-app" class="page">
+  <div class="app-body">
+    <!-- server / dm rail -->
+    <div class="rail">
+      <button class="rail-btn dm-btn active" data-view="dms" onclick="switchRailView('dms', this)" title="Direkt Mesajlar">DM</button>
+      <div class="rail-divider"></div>
+      <button class="rail-btn" data-view="server" onclick="switchRailView('server', this)" title="Kampüs Ekibi">KE</button>
+      <button class="rail-btn" data-view="server" onclick="switchRailView('server', this)" title="Staj Projesi">SP</button>
+      <button class="rail-btn" data-view="server" onclick="switchRailView('server', this)" title="Oyun Gecesi">OG</button>
+      <button class="rail-add">+</button>
+    </div>
+
+    <!-- sidebar: server channels -->
+    <div id="sidebar-server" class="sidebar hidden">
+      <div class="sidebar-header"><span>Staj Projesi</span><span style="color:var(--text-mut)">▾</span></div>
+      <div class="sidebar-scroll">
+        <p class="section-label">Metin Kanalları</p>
+        <button class="chan-btn active" onclick="selectChannel(this,'genel')"><span class="icon">#</span>genel</button>
+        <button class="chan-btn" onclick="selectChannel(this,'proje-notlari')"><span class="icon">#</span>proje-notlari</button>
+        <button class="chan-btn" onclick="selectChannel(this,'hata-ayiklama')"><span class="icon">#</span>hata-ayiklama</button>
+        <p class="section-label">Ses Kanalları</p>
+        <button class="chan-btn" onclick="goVoice('Sohbet Odası')"><span class="icon">🔊</span>Sohbet Odası</button>
+        <button class="chan-btn" onclick="goVoice('Çalışma Odası')"><span class="icon">🔊</span>Çalışma Odası</button>
+      </div>
+      <div class="user-bar">
+        <div class="user-avatar" id="userAvatar">@userInitials</div>
+        <div class="user-info"><p id="userNameLabel">@displayName</p><span class="status">çevrimiçi</span></div>
+        <button class="icon-btn">🎤</button>
+        <button class="icon-btn">🎧</button>
+        <button class="icon-btn" onclick="showPage('settings')">⚙️</button>
+      </div>
+    </div>
+
+    <!-- sidebar: DMs & groups -->
+    <div id="sidebar-dms" class="sidebar">
+      <div class="sidebar-header"><span>Mesajlar</span><span style="color:var(--text-mut)">＋</span></div>
+      <div class="sidebar-scroll">
+        <p class="section-label">Kişisel Mesajlar</p>
+        <button class="dm-item active" onclick="selectDM(this,'Arda', false)">
+          <span class="dm-avatar">AR<span class="status-dot" style="background:var(--mint)"></span></span>
+          <span><span class="dm-name">Arda</span><br><span class="dm-sub">staj sorumlusu</span></span>
+        </button>
+        <button class="dm-item" onclick="selectDM(this,'Deniz', false)">
+          <span class="dm-avatar">DE<span class="status-dot" style="background:var(--text-mut)"></span></span>
+          <span><span class="dm-name">Deniz</span><br><span class="dm-sub">boşta</span></span>
+        </button>
+        <p class="section-label">Grup Mesajları</p>
+        <button class="dm-item" onclick="selectDM(this,'Staj Grubu', true)">
+          <span class="dm-avatar" style="color:var(--accent)">SG</span>
+          <span><span class="dm-name">Staj Grubu</span><br><span class="dm-sub">Arda, Deniz, Mira</span></span>
+        </button>
+      </div>
+      <div class="user-bar">
+        <div class="user-avatar">@userInitials</div>
+        <div class="user-info"><p>@displayName</p><span class="status">çevrimiçi</span></div>
+        <button class="icon-btn">🎤</button>
+        <button class="icon-btn">🎧</button>
+        <button class="icon-btn" onclick="showPage('settings')">⚙️</button>
+      </div>
+    </div>
+
+    <!-- main chat -->
+    <div class="main">
+      <div class="main-header">
+        <div class="left"><span class="icon" id="chanIcon">👤</span><span id="chanTitle">Arda</span></div>
+        <div class="right"><span>🔍</span><span>👥</span></div>
+      </div>
+      <div id="messages" class="messages"></div>
+      <div class="composer">
+        <div class="composer-inner">
+          <span class="icon">📎</span>
+          <input id="draftInput" placeholder="Mesaj yaz" onkeydown="if(event.key==='Enter')sendMessage()" />
+          <span class="icon"></span>
+          <span class="icon">🙂</span>
+          <button class="send" onclick="sendMessage()">➤</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- members (server view only) -->
+    <div id="members-panel" class="members hidden">
+      <p class="members-label">Üyeler — 4</p>
+      <div class="member-row"><span class="member-avatar">AR<span class="status-dot" style="background:var(--mint)"></span></span><div><p class="member-name">Arda</p><p class="member-role">sorumlu</p></div></div>
+      <div class="member-row"><span class="member-avatar">@userInitials<span class="status-dot" style="background:var(--mint)"></span></span><div><p class="member-name">@displayName</p><p class="member-role">stajyer</p></div></div>
+      <div class="member-row"><span class="member-avatar">DE<span class="status-dot" style="background:var(--text-mut)"></span></span><div><p class="member-name">Deniz</p><p class="member-role">stajyer</p></div></div>
+      <div class="member-row"><span class="member-avatar">MI<span class="status-dot" style="background:var(--mint)"></span></span><div><p class="member-name">Mira (bot)</p><p class="member-role">bot</p></div></div>
+    </div>
+  </div>
+  <div class="console">
+    <span><span style="color:var(--mint)">▸</span> yerel://localhost:4000</span>
+    <span class="right" style="display:flex">
+      <span>📶 p2p bağlantı</span>
+      <span class="hide-mobile">🛡 sunucu bulutta değil · sadece bu makinede</span>
+    </span>
+  </div>
+</div>
+
+<!-- ============ VOICE ============ -->
+<div id="page-voice" class="page hidden">
+  <button class="back-link" onclick="showPage('app')">‹ Kanallara dön</button>
+  <div class="voice-main">
+    <div class="voice-title">
+      <h2 id="voiceRoomName">Sohbet Odası</h2>
+      <p>ses://localhost:4000/sohbet-odasi</p>
+    </div>
+    <div class="voice-grid">
+      <div class="voice-tile speaking"><div class="voice-avatar">AR</div><p>Arda</p></div>
+      <div class="voice-tile"><div class="voice-avatar">@userInitials</div><p>@displayName</p><span class="mute-badge">🎤</span></div>
+      <div class="voice-tile"><div class="voice-avatar">DE</div><p>Deniz</p><span class="mute-badge">🔇</span></div>
+    </div>
+    <div class="voice-controls">
+      <button class="vc-btn">🎤</button>
+      <button class="vc-btn">🎧</button>
+      <button class="vc-btn leave" onclick="showPage('app')">📵</button>
+    </div>
+  </div>
+  <div class="console">
+    <span><span style="color:var(--mint)">▸</span> yerel://localhost:4000</span>
+    <span class="right"><span>📶 ses akışı aktif</span></span>
+  </div>
+</div>
+
+<!-- ============ SETTINGS ============ -->
+<div id="page-settings" class="page hidden">
+  <div class="center">
+    <div class="settings-wrap">
+      <button class="back-link" style="padding:0;margin-bottom:16px" onclick="showPage('app')">‹ Sohbete dön</button>
+      <h1>Ayarlar</h1>
+      <div class="settings-card">
+        <div class="settings-row"><span class="icon">👤</span><span class="label">Profil</span><span class="value">@displayName</span></div>
+        <div class="settings-row"><span class="icon">🔑</span><span class="label">Yerel sunucu</span><span class="value">localhost:4000</span></div>
+        <div class="settings-row"><span class="icon">🖥️</span><span class="label">Ses girişi</span><span class="value">Sonra eklenecek</span></div>
+      </div>
+      <div class="settings-card">
+        <div class="settings-row">
+          <span class="icon">🔔</span><span class="label">Bildirimler</span>
+          <button class="toggle on" id="notifToggle" onclick="this.classList.toggle('on')"><span class="knob"></span></button>
+        </div>
+        <div class="settings-row">
+          <span class="icon">🎨</span><span class="label">Tema</span>
+          <div class="theme-pills">
+            <span class="pill active" onclick="pickTheme(this)">koyu</span>
+            <span class="pill" onclick="pickTheme(this)">açık</span>
+          </div>
+        </div>
+      </div>
+      <div class="note-box">
+        <span>🌙</span>
+        <p>Bu uygulama tamamen yerel çalışır. Mesajların hiçbiri dış bir sunucuya gönderilmez; ses özelliği bu ekrandan yönetilebilecek şekilde eklenecek.</p>
+      </div>
+      <form asp-controller="Auth" asp-action="Logout" method="post" style="margin-top:16px">
+        @Html.AntiForgeryToken()
+        <button type="submit" class="btn-primary" style="background:var(--bg-raised);color:var(--text-hi);">Çıkış yap</button>
+      </form>
+    </div>
+  </div>
+  <div class="console">
+    <span><span style="color:var(--mint)">▸</span> yerel://localhost:4000</span>
+    <span class="right"><span>🛡 yerel yapılandırma</span></span>
+  </div>
+</div>
+
+@section Scripts {
+    <script>
+        // displayName sunucudan geliyor; içinde " veya < gibi karakter varsa Razor zaten HTML-encode eder.
+        window.CURRENT_USER = "@displayName";
+    </script>
+    <script src="~/js/app.js"></script>
+}

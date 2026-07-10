@@ -2,6 +2,7 @@
 using Core.Entities;
 using Data.Context;
 using BCrypt.Net;
+using System.Runtime;
 
 namespace Business.Services
 {
@@ -28,9 +29,9 @@ namespace Business.Services
             string passwordHash = BCrypt.Net.BCrypt.HashPassword(Dto.Password);
 
             // Yeni kullanıcı oluştur
-            var user = new User
+            var user = new AppUser
             { 
-                Username = Dto.Username,
+                UserName = Dto.UserName,
                 Email = Dto.Email,
                 PasswordHash = passwordHash,
                 CreateAt = DateTime.UtcNow
@@ -43,7 +44,7 @@ namespace Business.Services
         }
 
         // Giriş Yapma (Hash dogrulancak)
-        public User? Login(LoginDto dto)
+        public AppUser? Login(LoginDto dto)
         {
             // 1. Önce email ile kullanıcıyı veritabanında bul
             var user = _context.Users.FirstOrDefault(u => u.Email == dto.Email);
@@ -60,6 +61,10 @@ namespace Business.Services
             }
 
             return user; 
+        }
+        public List<AppUser> GetAllUsers()
+        {
+            return _context.Users.ToList();
         }
     }
 }

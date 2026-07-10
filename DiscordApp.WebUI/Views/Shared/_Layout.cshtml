@@ -1,0 +1,22 @@
+@{
+    // Bu satırlar gerçek Razor ifadeleridir -> tek "@" kullanılır (kaçış YOK).
+}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Yerel Sohbet</title>
+    @* NOT: Aşağıdaki URL'de "wght@@500" içindeki @@ , Razor'a bunun kod değil
+       düz metin (literal "@") olduğunu söylemek için kasıtlı olarak çift yazıldı. *@
+       <link rel="icon" type="image/x-icon" href="~/favicon.ico" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@@500;600;700&family=Inter:wght@@400;500;600&family=JetBrains+Mono:wght@@400;500&display=swap" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    @RenderBody()
+
+    <script src="~/js/validation.js"></script>
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

@@ -10,7 +10,7 @@ namespace Business.Validators
     {
         public RegisterDtoValidator()
         {
-            RuleFor(x => x.Username)
+            RuleFor(x => x.UserName)
                 .NotEmpty().WithMessage("Kullanıcı adı boş olamaz")
                 .Length(3, 20).WithMessage("Kullanıcı adı 3 ile 20 karakter arasında olmalıdır");
             RuleFor(x => x.Email)

@@ -11,11 +11,12 @@ namespace DiscordApp.WebApi.Controllers
     public class AuthController : ControllerBase
     {
         private readonly AuthService _authService;
+        private readonly ApiContext _context;
 
-        public AuthController()
+        public AuthController(ApiContext context)
         {
-            var context = new ApiContext();
-            _authService = new AuthService(context);
+            _context = context;
+            _authService = new AuthService(_context);
         }
         // POST: api/Auth/register      
         [HttpPost("register")]
@@ -42,10 +43,16 @@ namespace DiscordApp.WebApi.Controllers
             }
             return Ok(new
             {
-                Message = "Giriş Başarılı",
-                UserId = user.UserId,
-                Username = user.Username
+                Message = true,
+                UserId = user.Id,
+                Username = user.UserName,
             });
+        }
+        [HttpGet("users")]
+        public IActionResult GetAllUsers()
+        {
+            var users = _authService.GetAllUsers();
+            return Ok(users);
         }
     }
 }

@@ -1,0 +1,11 @@
+﻿namespace DiscordApp.WebUI.Models
+{
+    public class LoginResponseViewModel
+    {
+        public bool Message { get; set; }
+        public int UserId { get; set; }
+
+
+        public string Username { get; set; }
+    }
+}

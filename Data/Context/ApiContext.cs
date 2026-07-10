@@ -2,19 +2,20 @@
 using System.Collections.Generic;
 using System.Text;
 using Core.Entities;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 
 namespace Data.Context
 {
-    public class ApiContext : DbContext
+    public class ApiContext : IdentityDbContext<AppUser,IdentityRole<int>, int>
     {
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        public  ApiContext(DbContextOptions<ApiContext> optionsBuilder) : base(optionsBuilder)
         {
-            optionsBuilder.UseSqlServer("Server=(localdb)\\MSSQLLocalDB;initial catalog=DiscordAppDb;integrated security=true");
+            //optionsBuilder.UseSqlServer("Server=(localdb)\\MSSQLLocalDB;initial catalog=DiscordAppDb;integrated security=true");
         }
 
-        public DbSet<User> Users { get; set; }
         public DbSet<Channel> Channels { get; set; }
         public DbSet<Message> Messages { get; set; }
         public DbSet<FriendShip> FriendShips { get; set; }

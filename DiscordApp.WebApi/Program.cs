@@ -1,9 +1,27 @@
 using Business.Validators;
-using FluentValidation;
+using Core.Entities;
+using Data.Context;
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+
+
+builder.Services.AddDbContext<ApiContext>(option=> option.UseSqlServer(builder.Configuration.GetConnectionString("SqlServer")));
+
+builder.Services.AddIdentity<AppUser, IdentityRole<int>>(options =>
+{
+    // Buradan Identity şifre kurallarını istersen esnetebilirsin:
+    options.Password.RequiredLength = 6;
+    options.Password.RequireNonAlphanumeric = false; // Özel karakter zorunluluğunu kaldırdık
+    options.Password.RequireDigit = true;
+    options.Password.RequireLowercase = true;
+    options.Password.RequireUppercase = true;
+})
+.AddEntityFrameworkStores<ApiContext>()
+.AddDefaultTokenProviders();
 
 builder.Services.AddCors(options =>
 {
@@ -35,7 +53,7 @@ if (app.Environment.IsDevelopment())
 app.UseCors("AllowAll");
 
 app.UseHttpsRedirection();
-
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

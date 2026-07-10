@@ -10,9 +10,9 @@ namespace Core.Entities
         public string Content { get; set; }
         public DateTime SentAt { get; set; } = DateTime.UtcNow;
         public int SenderId { get; set; }
-        public User Sender { get; set; }
+        public AppUser Sender { get; set; }
         public int? ReceiverId { get; set; }
-        public User Receiver { get; set; }
+        public AppUser Receiver { get; set; }
 
         public int? ChannelId { get; set; }
         public Channel Channel { get; set; }
