@@ -46,7 +46,17 @@ namespace DiscordApp.WebUI.Models
                     return ServiceResult<TResponse>.Success(data!);
                 }
 
-                string cleanError = content.Replace("\"", "");
+                string cleanError = content.Replace("\"", "").Trim();
+                if (string.IsNullOrWhiteSpace(cleanError))
+                {
+                    cleanError = response.StatusCode switch
+                    {
+                        System.Net.HttpStatusCode.Unauthorized => "E-posta veya şifre hatalı.",
+                        System.Net.HttpStatusCode.BadRequest => "Geçersiz bir istek gönderildi.",
+                        System.Net.HttpStatusCode.NotFound => "Aranan kaynak bulunamadı.",
+                        _ => "Bir hata oluştu. Lütfen tekrar deneyin."
+                    };
+                }
                 return ServiceResult<TResponse>.Failure(cleanError);
             }
             catch (Exception)

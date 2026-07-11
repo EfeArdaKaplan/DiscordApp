@@ -11,6 +11,12 @@
       <h1 class="title-h1">Yerel Sohbet</h1>
       <p class="subtitle">Buluta çıkmayan, tamamen bu makinede çalışan çete sohbeti.</p>
       <div class="card">
+                @if (ViewBag.ErrorMessage != null && ViewBag.ErrorMessage is string && ((string)ViewBag.ErrorMessage).Trim().Length > 0)
+                {
+                    <div class="system-error-box" style="background: rgba(229, 72, 77, 0.1); border: 1px solid #E5484D; color: #E5484D; padding: 10px; border-radius: 8px; margin-bottom: 16px; font-size: 13px; text-align: center; font-weight: 500;">
+                        ⚠️ @ViewBag.ErrorMessage
+                    </div>
+                }
         <form id="loginForm" asp-controller="Auth" asp-action="Login" method="post" novalidate>
           @Html.AntiForgeryToken()
 
