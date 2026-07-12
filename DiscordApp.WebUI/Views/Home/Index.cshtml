@@ -35,15 +35,13 @@
 
     <!-- sidebar: server channels -->
     <div id="sidebar-server" class="sidebar hidden">
-      <div class="sidebar-header"><span>Staj Projesi</span><span style="color:var(--text-mut)">▾</span></div>
+      <div class="sidebar-header"><span id="currentServerName">Sunucu</span><span style="color:var(--text-mut)">▾</span></div>
       <div class="sidebar-scroll">
         <p class="section-label">Metin Kanalları</p>
-        <button class="chan-btn active" onclick="selectChannel(this,'genel')"><span class="icon">#</span>genel</button>
-        <button class="chan-btn" onclick="selectChannel(this,'proje-notlari')"><span class="icon">#</span>proje-notlari</button>
-        <button class="chan-btn" onclick="selectChannel(this,'hata-ayiklama')"><span class="icon">#</span>hata-ayiklama</button>
-        <p class="section-label">Ses Kanalları</p>
-        <button class="chan-btn" onclick="goVoice('Sohbet Odası')"><span class="icon">🔊</span>Sohbet Odası</button>
-        <button class="chan-btn" onclick="goVoice('Çalışma Odası')"><span class="icon">🔊</span>Çalışma Odası</button>
+        <div id="channelList"></div>
+        <button class="chan-btn" id="addChannelBtn" style="color:var(--text-mut)">
+          <span class="icon">＋</span>kanal ekle
+        </button>
       </div>
       <div class="user-bar">
         <div class="user-avatar" id="userAvatar">@userInitials</div>
@@ -102,11 +100,8 @@
 
     <!-- members (server view only) -->
     <div id="members-panel" class="members hidden">
-      <p class="members-label">Üyeler — 4</p>
-      <div class="member-row"><span class="member-avatar">AR<span class="status-dot" style="background:var(--mint)"></span></span><div><p class="member-name">Arda</p><p class="member-role">sorumlu</p></div></div>
-      <div class="member-row"><span class="member-avatar">@userInitials<span class="status-dot" style="background:var(--mint)"></span></span><div><p class="member-name">@displayName</p><p class="member-role">stajyer</p></div></div>
-      <div class="member-row"><span class="member-avatar">DE<span class="status-dot" style="background:var(--text-mut)"></span></span><div><p class="member-name">Deniz</p><p class="member-role">stajyer</p></div></div>
-      <div class="member-row"><span class="member-avatar">MI<span class="status-dot" style="background:var(--mint)"></span></span><div><p class="member-name">Mira (bot)</p><p class="member-role">bot</p></div></div>
+      <p class="members-label" id="membersLabel">Üyeler</p>
+      <div id="membersList"></div>
     </div>
   </div>
   <div class="console">
@@ -184,11 +179,16 @@
 </div>
 
 @await Html.PartialAsync("_createServerModel")
+@await Html.PartialAsync("_CreateChannelModal")
 
 @section Scripts {
     <script>
         // displayName sunucudan geliyor; içinde " veya < gibi karakter varsa Razor zaten HTML-encode eder.
         window.CURRENT_USER = "@displayName";
+        // Sunucular + kanalları API'den zaten çekilmiş haliyle burada JS'e veriyoruz (ekstra istek atmaya gerek yok).
+        window.SERVERS_DATA = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+            Model ?? new List<DiscordApp.WebUI.Models.ServerViewModel>(),
+            new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }));
     </script>
     <script src="~/js/app.js"></script>
 }

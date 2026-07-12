@@ -1,6 +1,8 @@
 // Home/Index ekranı: sunucu/DM listesi, kanal seçimi, mesajlaşma, ses ekranı ve ayarlar.
-// window.CURRENT_USER değeri Index.cshtml içinde sunucudan (session'daki kullanıcı adından) basılır.
+// window.CURRENT_USER ve window.SERVERS_DATA değerleri Index.cshtml içinde sunucudan basılır.
 let userName = window.CURRENT_USER || "Kullanıcı";
+let serversData = window.SERVERS_DATA || []; // [{id, name, channels:[{id,name,serverId}]}]
+let currentServerId = null;
 let currentThread = "Arda";
 let messageStore = {
     "Arda": [
@@ -14,16 +16,6 @@ let messageStore = {
         { system: true, text: "Yerel sunucu çalışıyor · localhost:4000" },
         { author: "Arda", time: "14:05", text: "Ses entegrasyonunu sonraya bırakıyoruz, önce arayüz." },
         { author: "Mira (bot)", time: "14:05", text: "Not alındı." }
-    ],
-    "genel": [
-        { system: true, text: "Kanal oluşturuldu: #genel" },
-        { author: "Arda", time: "09:10", text: "Günaydın ekip!" }
-    ],
-    "proje-notlari": [
-        { author: "Sofia", time: "10:00", text: "Frontend taslağını ekledim." }
-    ],
-    "hata-ayiklama": [
-        { author: "Deniz", time: "13:40", text: "Composer'da enter tuşu çalışmıyor, bakıyorum." }
     ]
 };
 
@@ -41,11 +33,86 @@ function switchRailView(view, el) {
         document.getElementById('members-panel').classList.add('hidden');
         selectDM(document.querySelector('#sidebar-dms .dm-item'), 'Arda', false);
     } else {
+        const serverId = parseInt(el.getAttribute('data-server-id'), 10);
+        currentServerId = serverId;
+
         document.getElementById('sidebar-server').classList.remove('hidden');
         document.getElementById('sidebar-dms').classList.add('hidden');
         document.getElementById('members-panel').classList.remove('hidden');
-        selectChannel(document.querySelector('#sidebar-server .chan-btn'), 'genel');
+
+        loadServer(serverId);
     }
+}
+
+// Seçilen sunucunun kanallarını (zaten elimizde olan veriden) ve üyelerini (API'den) yükler.
+function loadServer(serverId) {
+    const server = serversData.find(s => s.id === serverId);
+    document.getElementById('currentServerName').textContent = server ? server.name : 'Sunucu';
+
+    renderChannels(server);
+    loadMembers(serverId);
+}
+
+function renderChannels(server) {
+    const list = document.getElementById('channelList');
+    list.innerHTML = '';
+
+    const channels = (server && server.channels) ? server.channels : [];
+
+    if (channels.length === 0) {
+        const empty = document.createElement('p');
+        empty.className = 'section-label';
+        empty.textContent = 'Henüz kanal yok';
+        list.appendChild(empty);
+        return;
+    }
+
+    channels.forEach((ch, index) => {
+        const btn = document.createElement('button');
+        btn.className = 'chan-btn' + (index === 0 ? ' active' : '');
+        btn.innerHTML = '<span class="icon">#</span>' + escapeHtml(ch.name);
+        btn.onclick = () => selectChannel(btn, ch.name);
+        list.appendChild(btn);
+    });
+
+    // İlk kanalı otomatik seç
+    currentThread = channels[0].name;
+    document.getElementById('chanIcon').textContent = '#';
+    document.getElementById('chanTitle').textContent = channels[0].name;
+    if (!messageStore[currentThread]) messageStore[currentThread] = [];
+    renderMessages();
+}
+
+async function loadMembers(serverId) {
+    const list = document.getElementById('membersList');
+    const label = document.getElementById('membersLabel');
+    list.innerHTML = '<p class="section-label">Yükleniyor...</p>';
+
+    try {
+        const response = await fetch(`/Home/GetMembers?serverId=${serverId}`);
+        if (!response.ok) throw new Error('Üyeler alınamadı');
+        const members = await response.json();
+
+        label.textContent = `Üyeler — ${members.length}`;
+        list.innerHTML = '';
+
+        members.forEach(m => {
+            const row = document.createElement('div');
+            row.className = 'member-row';
+            row.innerHTML = `<span class="member-avatar">${initials(m.userName)}<span class="status-dot" style="background:var(--mint)"></span></span>
+        <div><p class="member-name">${escapeHtml(m.userName)}</p><p class="member-role">${m.isOwner ? 'sunucu sahibi' : 'üye'}</p></div>`;
+            list.appendChild(row);
+        });
+    } catch (err) {
+        console.error(err);
+        list.innerHTML = '<p class="section-label">Üyeler yüklenemedi</p>';
+    }
+}
+
+function escapeHtml(str) {
+    const d = document.createElement('div');
+    d.textContent = str ?? '';
+    return d.innerHTML;
 }
 
 function selectChannel(el, name) {
@@ -54,6 +121,7 @@ function selectChannel(el, name) {
     currentThread = name;
     document.getElementById('chanIcon').textContent = '#';
     document.getElementById('chanTitle').textContent = name;
+    if (!messageStore[currentThread]) messageStore[currentThread] = [];
     renderMessages();
 }
 
@@ -129,6 +197,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (addBtn) {
         addBtn.addEventListener("click", openServerModal);
     }
+
+    // "kanal ekle" butonu
+    const addChannelBtn = document.getElementById("addChannelBtn");
+    if (addChannelBtn) {
+        addChannelBtn.addEventListener("click", openChannelModal);
+    }
+
+    // Sayfa ilk açıldığında zaten seçili olan (ilk) sunucuyu yükle
+    const firstServerBtn = document.querySelector('.rail-btn[data-server-id]');
+    if (firstServerBtn && document.getElementById('sidebar-server') && !document.getElementById('sidebar-server').classList.contains('hidden')) {
+        switchRailView('server', firstServerBtn);
+    }
 });
 
 function openServerModal() {
@@ -174,5 +254,61 @@ async function submitNewServer() {
     } catch (err) {
         console.error("Hata:", err);
         alert("Sunucu eklenirken bir bağlantı hatası oluştu!");
+    }
+}
+
+// KANAL EKLEME POPUP (MODAL) İŞLEMLERİ
+
+function openChannelModal() {
+    if (!currentServerId) {
+        alert("Önce bir sunucu seç!");
+        return;
+    }
+    const modal = document.getElementById("createChannelModal");
+    if (modal) {
+        modal.style.display = "flex";
+        const input = document.getElementById("newChannelNameInput");
+        if (input) input.focus();
+    }
+}
+
+function closeChannelModal() {
+    const modal = document.getElementById("createChannelModal");
+    if (modal) modal.style.display = "none";
+    const input = document.getElementById("newChannelNameInput");
+    if (input) input.value = "";
+}
+
+async function submitNewChannel() {
+    const input = document.getElementById("newChannelNameInput");
+    const channelName = input ? input.value.trim() : "";
+
+    if (!channelName) {
+        alert("Lütfen bir kanal adı girin!");
+        return;
+    }
+    if (!currentServerId) {
+        alert("Önce bir sunucu seç!");
+        return;
+    }
+
+    try {
+        const response = await fetch('/Home/CreateChannel', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ serverId: currentServerId, name: channelName })
+        });
+
+        const resData = await response.json();
+
+        if (resData.success) {
+            closeChannelModal();
+            location.reload(); // Kanalı listede göstermek için yenile
+        } else {
+            alert(resData.message || "Kanal oluşturulurken bir hata oluştu.");
+        }
+    } catch (err) {
+        console.error("Hata:", err);
+        alert("Kanal eklenirken bir bağlantı hatası oluştu!");
     }
 }

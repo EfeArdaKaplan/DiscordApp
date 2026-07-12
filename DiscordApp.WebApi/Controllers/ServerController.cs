@@ -23,13 +23,7 @@ namespace DiscordApp.WebApi.Controllers
         [HttpGet("UserServers")]
         public async Task<IActionResult> GetUserServers()
         {
-            // JWT içindeki ID'yi hangi isimle kaydedilmiş olursa olsun bulur
-            var userId = User.Claims.FirstOrDefault(c =>
-                c.Type == ClaimTypes.NameIdentifier ||
-                c.Type == "id" ||
-                c.Type == "UserId" ||
-                c.Type == "sub")?.Value;
-
+            var userId = GetUserId();
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized(new { message = "Token var ama içinden ID okunamadı!" });
 
@@ -37,15 +31,21 @@ namespace DiscordApp.WebApi.Controllers
             return Ok(servers);
         }
 
+        [HttpGet("{serverId}/Members")]
+        public async Task<IActionResult> GetMembers(int serverId)
+        {
+            var userId = GetUserId();
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(new { message = "Token var ama içinden ID okunamadı!" });
+
+            var members = await _serverService.GetServerMembersAsync(serverId, userId);
+            return Ok(members);
+        }
+
         [HttpPost("Create")]
         public async Task<IActionResult> Create([FromBody] CreateServerDto dto)
         {
-            var userId = User.Claims.FirstOrDefault(c =>
-                c.Type == ClaimTypes.NameIdentifier ||
-                c.Type == "id" ||
-                c.Type == "UserId" ||
-                c.Type == "sub")?.Value;
-
+            var userId = GetUserId();
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized(new { message = "Token var ama içinden ID okunamadı!" });
 
@@ -54,6 +54,16 @@ namespace DiscordApp.WebApi.Controllers
                 return Ok(new { success = true });
 
             return BadRequest(new { success = false, message = "Sunucu oluşturulamadı!" });
+        }
+
+        // JWT içindeki kullanıcı ID'sini hangi claim adıyla kaydedilmiş olursa olsun bulur
+        private string? GetUserId()
+        {
+            return User.Claims.FirstOrDefault(c =>
+                c.Type == ClaimTypes.NameIdentifier ||
+                c.Type == "id" ||
+                c.Type == "UserId" ||
+                c.Type == "sub")?.Value;
         }
     }
 }

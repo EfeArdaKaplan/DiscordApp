@@ -14,4 +14,11 @@
         public string Name { get; set; }
         public int ServerId { get; set; }
     }
+
+    public class MemberViewModel
+    {
+        public int Id { get; set; }
+        public string UserName { get; set; } = string.Empty;
+        public bool IsOwner { get; set; }
+    }
 }

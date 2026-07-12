@@ -72,5 +72,58 @@ namespace Business.Services
             await _context.SaveChangesAsync();
             return true;
         }
+
+        public async Task<bool> CreateChannelAsync(int serverId, string channelName, string userId)
+        {
+            if (!int.TryParse(userId, out int parsedUserId))
+                return false;
+
+            if (string.IsNullOrWhiteSpace(channelName))
+                return false;
+
+            // Kullanıcı gerçekten bu sunucunun üyesi mi? Değilse kanal ekleyemesin.
+            bool isMember = await _context.UserServers
+                .AnyAsync(us => us.ServerId == serverId && us.UserId == parsedUserId);
+
+            if (!isMember)
+                return false;
+
+            var channel = new Channel
+            {
+                Name = channelName.Trim(),
+                ServerId = serverId
+            };
+
+            _context.Channels.Add(channel);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<List<MemberDto>> GetServerMembersAsync(int serverId, string requestingUserId)
+        {
+            if (!int.TryParse(requestingUserId, out int parsedUserId))
+                return new List<MemberDto>();
+
+            // İsteği atan kullanıcı bu sunucunun üyesi değilse başka sunucunun üyelerini göremesin.
+            bool isMember = await _context.UserServers
+                .AnyAsync(us => us.ServerId == serverId && us.UserId == parsedUserId);
+
+            if (!isMember)
+                return new List<MemberDto>();
+
+            var server = await _context.Servers.FirstOrDefaultAsync(s => s.Id == serverId);
+            if (server == null)
+                return new List<MemberDto>();
+
+            return await _context.UserServers
+                .Where(us => us.ServerId == serverId)
+                .Select(us => new MemberDto
+                {
+                    Id = us.User.Id,
+                    UserName = us.User.UserName ?? "Kullanıcı",
+                    IsOwner = us.UserId == server.OwnerId
+                })
+                .ToListAsync();
+        }
     }
 }

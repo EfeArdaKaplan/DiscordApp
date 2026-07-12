@@ -16,4 +16,11 @@ namespace Business.Dtos
         public string Name { get; set; } = string.Empty;
         public int ServerId { get; set; }
     }
+
+    public class MemberDto
+    {
+        public int Id { get; set; }
+        public string UserName { get; set; } = string.Empty;
+        public bool IsOwner { get; set; }
+    }
 }

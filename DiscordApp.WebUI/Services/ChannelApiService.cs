@@ -24,7 +24,6 @@ namespace DiscordApp.WebUI.Services
             var token = _httpContextAccessor.HttpContext?.User.FindFirst("JWToken")?.Value
                      ?? _httpContextAccessor.HttpContext?.User.FindFirst("Token")?.Value;
 
-
             // Eğer token'ın içinde yanlışlıkla "Bearer " kelimesi kaldıysa onu temizler
             if (!string.IsNullOrEmpty(token) && token.StartsWith("Bearer ", System.StringComparison.OrdinalIgnoreCase))
             {
@@ -59,6 +58,34 @@ namespace DiscordApp.WebUI.Services
             catch
             {
                 return new List<ServerViewModel>();
+            }
+        }
+
+        public async Task<List<MemberViewModel>> GetServerMembersAsync(int serverId)
+        {
+            try
+            {
+                var token = GetToken();
+                var request = new HttpRequestMessage(HttpMethod.Get, $"api/Server/{serverId}/Members");
+
+                if (!string.IsNullOrEmpty(token))
+                {
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                }
+
+                var response = await _httpClient.SendAsync(request);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var result = await response.Content.ReadFromJsonAsync<List<MemberViewModel>>();
+                    return result ?? new List<MemberViewModel>();
+                }
+
+                return new List<MemberViewModel>();
+            }
+            catch
+            {
+                return new List<MemberViewModel>();
             }
         }
 

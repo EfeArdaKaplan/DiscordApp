@@ -50,8 +50,35 @@ namespace DiscordApp.WebUI.Controllers
             return BadRequest(new { success = false, message = "Sunucu Oluşturulamadı" });
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetMembers(int serverId)
+        {
+            var members = await _channelApiService.GetServerMembersAsync(serverId);
+            return Ok(members);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CreateChannel([FromBody] CreateChannelRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request?.Name))
+                return BadRequest(new { success = false, message = "Kanal adı boş olamaz!" });
+
+            var result = await _channelApiService.CreateChannelAsync(request.ServerId, request.Name);
+
+            if (result)
+                return Ok(new { success = true });
+
+            return BadRequest(new { success = false, message = "Kanal oluşturulamadı!" });
+        }
+
         public class CreateServerRequest
         {
+            public string Name { get; set; } = string.Empty;
+        }
+
+        public class CreateChannelRequest
+        {
+            public int ServerId { get; set; }
             public string Name { get; set; } = string.Empty;
         }
     }

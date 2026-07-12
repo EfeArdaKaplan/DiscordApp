@@ -7,5 +7,6 @@ namespace DiscordApp.WebUI.Services
         Task<List<ServerViewModel>> GetUserServersAsync();
         Task<bool> CreateServerAsync(string serverName);
         Task<bool> CreateChannelAsync(int serverId, string channelName);
+        Task<List<MemberViewModel>> GetServerMembersAsync(int serverId);
     }
 }
