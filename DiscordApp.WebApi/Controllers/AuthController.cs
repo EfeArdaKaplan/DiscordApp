@@ -1,4 +1,5 @@
-﻿using Business.Dtos;
+﻿using Business.Abstract;
+using Business.Dtos;
 using Business.Services;
 using Data.Context;
 using Microsoft.AspNetCore.Http;
@@ -12,11 +13,13 @@ namespace DiscordApp.WebApi.Controllers
     {
         private readonly AuthService _authService;
         private readonly ApiContext _context;
+        private readonly IJwtTokenService _jwtTokenService;
 
-        public AuthController(ApiContext context)
+        public AuthController(ApiContext context, IJwtTokenService jwtTokenService)
         {
             _context = context;
             _authService = new AuthService(_context);
+            _jwtTokenService = jwtTokenService;
         }
         // POST: api/Auth/register      
         [HttpPost("register")]
@@ -24,7 +27,7 @@ namespace DiscordApp.WebApi.Controllers
         {
             var result = _authService.Register(dto);
 
-            if(!result)
+            if (!result)
             {
                 return BadRequest("Bu e-posta adresi zaten bir başkası tarafından kullanılıyor");
             }
@@ -41,11 +44,16 @@ namespace DiscordApp.WebApi.Controllers
             {
                 return Unauthorized("E-posta adresi veya şifre hatalı!");
             }
+
+            var token = _jwtTokenService.GenerateToken(user, new List<string>());
+
             return Ok(new
             {
                 Message = true,
                 UserId = user.Id,
                 Username = user.UserName,
+                Email = user.Email,
+                Token = token
             });
         }
         [HttpGet("users")]

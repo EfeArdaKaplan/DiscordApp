@@ -6,8 +6,9 @@ namespace Core.Entities
 {
     public class Channel
     {
-        public int ChannelId { get; set; }
-        public string Name { get; set; }
-        public List<Message> Messages { get; set; } = new();
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public int ServerId { get; set; }
+        public Server Server { get; set; } = null!;
     }
 }

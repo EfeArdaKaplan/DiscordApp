@@ -30,6 +30,11 @@ builder.Services.AddHttpClient<IAuthApiService, AuthApiService>(client =>
     client.BaseAddress = new Uri("https://localhost:7072/");
 });
 
+builder.Services.AddHttpClient<IChannelApiService, ChannelApiService>(client =>
+{
+    client.BaseAddress = new Uri("https://localhost:7072");
+});
+
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())

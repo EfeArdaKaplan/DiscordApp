@@ -95,17 +95,22 @@ namespace Data.Migrations
 
             modelBuilder.Entity("Core.Entities.Channel", b =>
                 {
-                    b.Property<int>("ChannelId")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ChannelId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.HasKey("ChannelId");
+                    b.Property<int>("ServerId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ServerId");
 
                     b.ToTable("Channels");
                 });
@@ -177,6 +182,49 @@ namespace Data.Migrations
                     b.HasIndex("SenderId");
 
                     b.ToTable("Messages");
+                });
+
+            modelBuilder.Entity("Core.Entities.Server", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("OwnerId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Servers");
+                });
+
+            modelBuilder.Entity("Core.Entities.UserServer", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ServerId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ServerId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserServers");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<int>", b =>
@@ -312,6 +360,17 @@ namespace Data.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("Core.Entities.Channel", b =>
+                {
+                    b.HasOne("Core.Entities.Server", "Server")
+                        .WithMany("Channels")
+                        .HasForeignKey("ServerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Server");
+                });
+
             modelBuilder.Entity("Core.Entities.FriendShip", b =>
                 {
                     b.HasOne("Core.Entities.AppUser", "Receiver")
@@ -338,7 +397,7 @@ namespace Data.Migrations
                         .HasForeignKey("AppUserId");
 
                     b.HasOne("Core.Entities.Channel", "Channel")
-                        .WithMany("Messages")
+                        .WithMany()
                         .HasForeignKey("ChannelId");
 
                     b.HasOne("Core.Entities.AppUser", "Receiver")
@@ -357,6 +416,25 @@ namespace Data.Migrations
                     b.Navigation("Receiver");
 
                     b.Navigation("Sender");
+                });
+
+            modelBuilder.Entity("Core.Entities.UserServer", b =>
+                {
+                    b.HasOne("Core.Entities.Server", "Server")
+                        .WithMany("UserServers")
+                        .HasForeignKey("ServerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Core.Entities.AppUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Server");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<int>", b =>
@@ -415,9 +493,11 @@ namespace Data.Migrations
                     b.Navigation("Messages");
                 });
 
-            modelBuilder.Entity("Core.Entities.Channel", b =>
+            modelBuilder.Entity("Core.Entities.Server", b =>
                 {
-                    b.Navigation("Messages");
+                    b.Navigation("Channels");
+
+                    b.Navigation("UserServers");
                 });
 #pragma warning restore 612, 618
         }

@@ -1,0 +1,17 @@
+﻿namespace DiscordApp.WebUI.Models
+{
+    public class ServerViewModel
+    {
+        public int Id { get; set; }
+        public String Name { get; set; }
+        public string? IconUrl { get; set; }
+        public List<ChannelViewModel> Channels { get; set; } = new();
+    }
+
+    public class ChannelViewModel
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public int ServerId { get; set; }
+    }
+}

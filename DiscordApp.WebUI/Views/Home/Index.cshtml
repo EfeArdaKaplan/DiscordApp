@@ -1,3 +1,5 @@
+@model List<DiscordApp.WebUI.Models.ServerViewModel>
+
 @{
     ViewData["Title"] = "Sohbet";
     Layout = "_Layout";
@@ -13,10 +15,22 @@
     <div class="rail">
       <button class="rail-btn dm-btn active" data-view="dms" onclick="switchRailView('dms', this)" title="Direkt Mesajlar">DM</button>
       <div class="rail-divider"></div>
-      <button class="rail-btn" data-view="server" onclick="switchRailView('server', this)" title="Kampüs Ekibi">KE</button>
-      <button class="rail-btn" data-view="server" onclick="switchRailView('server', this)" title="Staj Projesi">SP</button>
-      <button class="rail-btn" data-view="server" onclick="switchRailView('server', this)" title="Oyun Gecesi">OG</button>
-      <button class="rail-add">+</button>
+            @if (Model != null && Model.Any()) {
+                @foreach (var server in Model) {
+                    // sunucu adının bas harflerini alıcaz
+                    var serverInitials = string.Concat(server.Name.Split(' ').Where(w => w.Length > 0).Select(w => char.ToUpper(w[0])));
+                    if (serverInitials.Length > 2) serverInitials = serverInitials.Substring(0, 2);
+
+                    <button class="rail-btn" 
+                            data-view="server" 
+                            data-server-id ="@server.Id" 
+                            onclick ="switchRailView('server', this)" 
+                            title = "@server.Name">
+                        @serverInitials
+                    </button>
+                }
+            }
+      <button class="rail-add" title="Sunucu Ekle">+</button>
     </div>
 
     <!-- sidebar: server channels -->
@@ -168,6 +182,8 @@
     <span class="right"><span>🛡 yerel yapılandırma</span></span>
   </div>
 </div>
+
+@await Html.PartialAsync("_createServerModel")
 
 @section Scripts {
     <script>
