@@ -125,5 +125,28 @@ namespace Business.Services
                 })
                 .ToListAsync();
         }
+        /*
+        public async Task<bool> DeleteServerAsync(int serverId, string userId)
+        {
+            if (!int.TryParse(userId, out int parsedUserId))
+                return false;
+
+            var server = await _context.Servers
+                .Include(s => s.Channels)
+                .FirstOrDefaultAsync(s => s.Id == serverId);
+
+            if (server == null || server.OwnerId != parsedUserId)
+                return false;
+
+            var userServers = await _context.UserServers
+                .Where(us => us.ServerId == serverId)
+                .ToListAsync();
+
+            _context.UserServers.RemoveRange(userServers);
+            _context.Channels.RemoveRange(server.Channels);
+            _context.Servers.Remove(server);
+            await _context.SaveChangesAsync();
+            return true; 
+        }*/
     }
 }

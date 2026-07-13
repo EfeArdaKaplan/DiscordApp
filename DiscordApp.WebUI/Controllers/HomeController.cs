@@ -18,6 +18,8 @@ namespace DiscordApp.WebUI.Controllers
 
         public async Task<IActionResult> Index()
         {
+            var userName = User.Identity?.Name ?? User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? "Kullanıcı";
+            ViewData["username"] = userName;
             // 1. API'den sunucuları çekiyoruz
             var servers = await _channelApiService.GetUserServersAsync();
 

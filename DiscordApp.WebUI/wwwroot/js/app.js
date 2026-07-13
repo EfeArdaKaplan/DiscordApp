@@ -187,9 +187,23 @@ function pickTheme(el) {
     el.classList.add('active');
 }
 
+// SOL ALTTAKİ KULLANICI BİLGİLERİNİ GÜNCELLEME
+function updateLocalUserProfile() {
+    const userAvatarEl = document.getElementById("userAvatar");
+    const userNameLabelEl = document.getElementById("userNameLabel");
+
+    if (userNameLabelEl) {
+        userNameLabelEl.textContent = userName;
+    }
+    if (userAvatarEl) {
+        userAvatarEl.textContent = initials(userName);
+    }
+}
+
 // SUNUCU EKLEME POPUP (MODAL) İŞLEMLERİ
 
 document.addEventListener('DOMContentLoaded', () => {
+    updateLocalUserProfile(); // Kullanıcı adını sol altta güncelle
     renderMessages();
 
     // '+' butonunu bul ve Model açma olayını bağla
@@ -247,7 +261,7 @@ async function submitNewServer() {
 
         if (resData.success) {
             closeServerModal();
-            location.reload(); // Sunucuyu sol tarafda göstermek için yenile
+            location.reload(); // Sunucu eklendiğinde rail güncellenmesi için yenileme
         } else {
             alert(resData.message || "Sunucu oluşturulurken bir hata oluştu.");
         }
@@ -303,7 +317,18 @@ async function submitNewChannel() {
 
         if (resData.success) {
             closeChannelModal();
-            location.reload(); // Kanalı listede göstermek için yenile
+
+            // Sayfayı yenilemek yerine mevcut sunucu verisine yeni kanalı dinamik ekleyip render alıyoruz
+            const currentServer = serversData.find(s => s.id === currentServerId);
+            if (currentServer) {
+                if (!currentServer.channels) currentServer.channels = [];
+                currentServer.channels.push({
+                    id: Date.now(), // Geçici dinamik ID
+                    name: channelName,
+                    serverId: currentServerId
+                });
+                renderChannels(currentServer);
+            }
         } else {
             alert(resData.message || "Kanal oluşturulurken bir hata oluştu.");
         }
