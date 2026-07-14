@@ -54,7 +54,16 @@
 
     <!-- sidebar: DMs & groups -->
     <div id="sidebar-dms" class="sidebar">
-      <div class="sidebar-header"><span>Mesajlar</span><span style="color:var(--text-mut)">＋</span></div>
+            <div class="sidebar-header">
+                <span>Mesajlar</span>
+                <div style="display:flex; gap:4px;">
+                    <a href="/Friend/Requests" class="friend-nav-btn" style="position:relative;" title="Gelen İstekler">
+                        🔔
+                        <span id="pendingBadge" class="notif-badge hidden">0</span>
+                    </a>
+                    <a href="/Friend/Search" class="friend-nav-btn" title="Arkadaş Ekle">＋</a>
+                </div>
+            </div>
       <div class="sidebar-scroll">
         <p class="section-label">Kişisel Mesajlar</p>
         <button class="dm-item active" onclick="selectDM(this,'Arda', false)">

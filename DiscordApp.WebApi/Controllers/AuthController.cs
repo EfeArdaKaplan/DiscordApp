@@ -2,6 +2,7 @@
 using Business.Dtos;
 using Business.Services;
 using Data.Context;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -59,8 +60,26 @@ namespace DiscordApp.WebApi.Controllers
         [HttpGet("users")]
         public IActionResult GetAllUsers()
         {
-            var users = _authService.GetAllUsers();
+            var users = _authService.GetAllUsers().Select(u => new { u.Id, u.UserName });
             return Ok(users);
+        }
+
+        [HttpGet("search")]
+        [Authorize]
+        public IActionResult SearchUsers(string username)
+        {
+            if (string.IsNullOrWhiteSpace(username))
+                return Ok(new List<object>());
+
+            var currentUserId = User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.NameIdentifier || c.Type == "id" || c.Type == "sub")?.Value;
+
+            var results = _context.Users
+                .Where(u => u.UserName.Contains(username) && u.Id.ToString() != currentUserId)
+                .Select(u => new { u.Id, u.UserName })
+                .Take(10)
+                .ToList();
+
+            return Ok(results);
         }
     }
 }

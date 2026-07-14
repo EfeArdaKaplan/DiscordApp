@@ -69,5 +69,18 @@ namespace Business.Services
                 .ToList();
             return _context.Users.Where(u => friendIds.Contains(u.Id)).ToList();
         }
+
+        public List<object> GetPendingRequests (int userId)
+        {
+            return _context.FriendShips
+                .Where(f => f.ReceiverId == userId && f.Status == FriendShipStatus.Pending)
+                .Select(f => new
+                 {
+                    FriendShipId = f.FriendShipId,
+                    SenderId = f.SenderId,
+                    SenderUserName = f.Sender.UserName
+                 })
+                .ToList<object>();
+        }
     }
 }

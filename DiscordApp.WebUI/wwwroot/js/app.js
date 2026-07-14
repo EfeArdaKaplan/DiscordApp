@@ -65,7 +65,7 @@ function renderChannels(server) {
         empty.textContent = 'Henüz kanal yok';
         list.appendChild(empty);
         return;
-    }
+    }""
 
     channels.forEach((ch, index) => {
         const btn = document.createElement('button');
@@ -337,3 +337,28 @@ async function submitNewChannel() {
         alert("Kanal eklenirken bir bağlantı hatası oluştu!");
     }
 }
+
+const originalTitle = document.title;
+
+async function checkPendingRequests() {
+    try {
+        const response = await fetch('/Friend/GetPendingCount');
+        const data = await response.json();
+        const badge = document.getElementById('pendingBadge');
+        if (!badge) return;
+
+        if (data.count > 0) {
+            badge.textContent = data.count > 9 ? '9+' : data.count;
+            badge.classList.remove('hidden');
+            document.title = `(${data.count}) ${originalTitle}`;
+        } else {
+            badge.classList.add('hidden');
+            document.title = originalTitle;
+        }
+    } catch (err) {
+        console.error('Bildirim sayısı alınamadı:', err);
+    }
+}
+
+checkPendingRequests();
+setInterval(checkPendingRequests, 15000); // her 15 saniyede bir kontrol et

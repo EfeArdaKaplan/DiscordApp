@@ -19,7 +19,7 @@ namespace Business.Services
         public bool Register(RegisterDto Dto)
         {
             // Bu email adresiyle önceden kayıt oluşturulmuş mu ?
-            var existingUser = _context.Users.FirstOrDefault(u => u.Email == Dto.Email);
+            var existingUser = _context.Users.FirstOrDefault(u => u.Email == Dto.Email || u.UserName == Dto.UserName );
             if (existingUser != null)
             {
                 return false; // kullanıcı var
