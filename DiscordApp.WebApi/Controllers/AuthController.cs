@@ -64,7 +64,7 @@ namespace DiscordApp.WebApi.Controllers
         [HttpGet("users")]
         public IActionResult GetAllUsers()
         {
-            var users = _authService.GetAllUsers();
+            var users = _authService.GetAllUsers().Select(u => new { u.Id, u.UserName });
             return Ok(users);
         }
 
