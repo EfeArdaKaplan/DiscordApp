@@ -1,4 +1,4 @@
-﻿using DiscordApp.WebUI.Services;
+﻿using DiscordApp.WebUI.Abstract;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

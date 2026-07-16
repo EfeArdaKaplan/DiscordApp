@@ -1,6 +1,6 @@
 ﻿using DiscordApp.WebUI.Models;
 
-namespace DiscordApp.WebUI.Services
+namespace DiscordApp.WebUI.Abstract
 {
     public interface IFriendApiService
     {
@@ -8,5 +8,6 @@ namespace DiscordApp.WebUI.Services
         Task<bool> SendRequestAsync(int receiverId);
         Task<List<PendingRequestViewModel>> GetPendingRequestsAsync();
         Task<bool> RespondToRequestAsync(int friendShipId, int isAccepted);
+        Task<List<UserSearchResultViewModel>> GetFriendsAsync();
     }
 }

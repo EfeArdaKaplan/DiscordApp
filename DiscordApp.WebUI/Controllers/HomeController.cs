@@ -1,5 +1,5 @@
+using DiscordApp.WebUI.Abstract;
 using DiscordApp.WebUI.Models;
-using DiscordApp.WebUI.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
@@ -10,20 +10,22 @@ namespace DiscordApp.WebUI.Controllers
     public class HomeController : Controller
     {
         private readonly IChannelApiService _channelApiService;
+        private readonly IFriendApiService _friendApiService;
+        private readonly IMessageApiService _messageApiService;
 
-        public HomeController(IChannelApiService channelApiService)
+        public HomeController(IChannelApiService channelApiService, IFriendApiService friendApiService, IMessageApiService messageApiService)
         {
             _channelApiService = channelApiService;
+            _friendApiService = friendApiService;
+            _messageApiService = messageApiService;
         }
 
         public async Task<IActionResult> Index()
         {
-            var userName = User.Identity?.Name ?? User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? "Kullanıcı";
-            ViewData["username"] = userName;
-            // 1. API'den sunucuları çekiyoruz
+            ViewData["UserName"] = User.Identity?.Name; // Auth cookie'sindeki ClaimTypes.Name
             var servers = await _channelApiService.GetUserServersAsync();
-
-            // 2. Çektiğimiz listeyi HTML ekranınaGÖNDERİYORUZ!
+            var friends = await _friendApiService.GetFriendsAsync();
+            ViewBag.Friends = friends;
             return View(servers);
         }
 
@@ -71,6 +73,31 @@ namespace DiscordApp.WebUI.Controllers
                 return Ok(new { success = true });
 
             return BadRequest(new { success = false, message = "Kanal oluşturulamadı!" });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetConversation(int otherUserId)
+        {
+            var messages = await _messageApiService.GetConversationAsync(otherUserId);
+            return Ok(messages);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SendMessage([FromBody] SendMessageRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request?.Content))
+                return BadRequest(new { success = false, message = "Mesaj boş olamaz!" });
+
+            var result = await _messageApiService.SendMessageAsync(request.ReceiverId, request.Content);
+            if (result) return Ok(new { success = true });
+
+            return BadRequest(new { success = false, message = "Mesaj gönderilemedi!" });
+        }
+
+        public class SendMessageRequest
+        {
+            public int ReceiverId { get; set; }
+            public string Content { get; set; } = string.Empty;
         }
 
         public class CreateServerRequest

@@ -4,6 +4,8 @@ using Business.Services;
 using Business.Validators;
 using Core.Entities;
 using Data.Context;
+using DiscordApp.WebApi.Hubs;
+using DiscordApp.WebApi.Notifications;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -18,7 +20,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<ApiContext>(option => option.UseSqlServer(builder.Configuration.GetConnectionString("SqlServer")));
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IServerService, ServerService>(); //
+builder.Services.AddScoped<IMessageService, MessageService>();
 builder.Services.AddAutoMapper(cfg => { }, typeof(MappingProfile));
+builder.Services.AddScoped<IMessageNotifier, SignalRMessageNotifier>();
 // JWT Ayarları
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var secretKey = Encoding.UTF8.GetBytes(jwtSettings["Key"]!);
@@ -31,8 +35,11 @@ builder.Services.AddIdentity<AppUser, IdentityRole<int>>(options =>
     options.Password.RequireLowercase = true;
     options.Password.RequireUppercase = true;
 })
+
 .AddEntityFrameworkStores<ApiContext>()
 .AddDefaultTokenProviders();
+
+builder.Services.AddSignalR();
 
 builder.Services.AddAuthentication(options =>
 {
@@ -58,6 +65,17 @@ builder.Services.AddAuthentication(options =>
         {
             Console.WriteLine("[JWT HATA] " + context.Exception.Message);
             return Task.CompletedTask;
+        },
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+            if (!string.IsNullOrEmpty(accessToken) &&
+                path.StartsWithSegments("/hubs"))
+            {
+                context.Token = accessToken;
+            }
+            return Task.CompletedTask;
         }
     };
 });
@@ -66,9 +84,10 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll",
         builder => builder
-            .AllowAnyOrigin()
+            .WithOrigins("https://localhost:7200", "https://localhost:5249")
             .AllowAnyMethod()
-            .AllowAnyHeader());
+            .AllowAnyHeader()
+            .AllowCredentials());
 });
 
 builder.Services.AddControllers();
@@ -94,4 +113,5 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<ChatHub>("/hubs/chat");
 app.Run();

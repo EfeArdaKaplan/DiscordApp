@@ -32,9 +32,9 @@
             }
       <button class="rail-add" title="Sunucu Ekle">+</button>
     </div>
-
-    <!-- sidebar: server channels -->
-    <div id="sidebar-server" class="sidebar hidden">
+    <div class="sidebar-wrapper">
+         <!-- sidebar: server channels -->
+        <div id="sidebar-server" class="sidebar hidden">
       <div class="sidebar-header"><span id="currentServerName">Sunucu</span><span style="color:var(--text-mut)">▾</span></div>
       <div class="sidebar-scroll">
         <p class="section-label">Metin Kanalları</p>
@@ -43,17 +43,11 @@
           <span class="icon">＋</span>kanal ekle
         </button>
       </div>
-      <div class="user-bar">
-        <div class="user-avatar" id="userAvatar">@userInitials</div>
-        <div class="user-info"><p id="userNameLabel">@displayName</p><span class="status">çevrimiçi</span></div>
-        <button class="icon-btn">🎤</button>
-        <button class="icon-btn">🎧</button>
-        <button class="icon-btn" onclick="showPage('settings')">⚙️</button>
-      </div>
+      
     </div>
 
-    <!-- sidebar: DMs & groups -->
-    <div id="sidebar-dms" class="sidebar">
+        <!-- sidebar: DMs & groups -->
+        <div id="sidebar-dms" class="sidebar">
             <div class="sidebar-header">
                 <span>Mesajlar</span>
                 <div style="display:flex; gap:4px;">
@@ -64,29 +58,19 @@
                     <a href="/Friend/Search" class="friend-nav-btn" title="Arkadaş Ekle">＋</a>
                 </div>
             </div>
-      <div class="sidebar-scroll">
-        <p class="section-label">Kişisel Mesajlar</p>
-        <button class="dm-item active" onclick="selectDM(this,'Arda', false)">
-          <span class="dm-avatar">AR<span class="status-dot" style="background:var(--mint)"></span></span>
-          <span><span class="dm-name">Arda</span><br><span class="dm-sub">staj sorumlusu</span></span>
-        </button>
-        <button class="dm-item" onclick="selectDM(this,'Deniz', false)">
-          <span class="dm-avatar">DE<span class="status-dot" style="background:var(--text-mut)"></span></span>
-          <span><span class="dm-name">Deniz</span><br><span class="dm-sub">boşta</span></span>
-        </button>
-        <p class="section-label">Grup Mesajları</p>
-        <button class="dm-item" onclick="selectDM(this,'Staj Grubu', true)">
-          <span class="dm-avatar" style="color:var(--accent)">SG</span>
-          <span><span class="dm-name">Staj Grubu</span><br><span class="dm-sub">Arda, Deniz, Mira</span></span>
-        </button>
-      </div>
-      <div class="user-bar">
-        <div class="user-avatar">@userInitials</div>
-        <div class="user-info"><p>@displayName</p><span class="status">çevrimiçi</span></div>
-        <button class="icon-btn">🎤</button>
-        <button class="icon-btn">🎧</button>
-        <button class="icon-btn" onclick="showPage('settings')">⚙️</button>
-      </div>
+            <div class="sidebar-scroll">
+                <p class="section-label">Arkadaşlar</p>
+                <div id="dmList"></div>
+            </div>
+        </div>
+
+        <div class="user-bar">
+            <div class="user-avatar" id="userAvatar">@userInitials</div>
+            <div class="user-info"><p id="userNameLabel">@displayName</p><span class="status">çevrimiçi</span></div>
+            <button class="icon-btn">🎤</button>
+            <button class="icon-btn">🎧</button>
+            <button class="icon-btn" onclick="showPage('settings')">⚙️</button>
+        </div>
     </div>
 
     <!-- main chat -->
@@ -191,13 +175,22 @@
 @await Html.PartialAsync("_CreateChannelModal")
 
 @section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
     <script>
-        // displayName sunucudan geliyor; içinde " veya < gibi karakter varsa Razor zaten HTML-encode eder.
-        window.CURRENT_USER = "@displayName";
-        // Sunucular + kanalları API'den zaten çekilmiş haliyle burada JS'e veriyoruz (ekstra istek atmaya gerek yok).
+        window.CURRENT_USER = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(displayName));
+        window.CURRENT_USER_ID = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+                User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.NameIdentifier)?.Value));
+        window.JWT_TOKEN = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+                User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value));
+        window.HUB_URL = "https://localhost:7072/hubs/chat";
+
         window.SERVERS_DATA = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
-            Model ?? new List<DiscordApp.WebUI.Models.ServerViewModel>(),
-            new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }));
+                Model ?? new List<DiscordApp.WebUI.Models.ServerViewModel>(),
+                new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }));
+        window.FRIENDS_DATA = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+                ViewBag.Friends ?? new List<DiscordApp.WebUI.Models.UserSearchResultViewModel>(),
+                new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }));
     </script>
     <script src="~/js/app.js"></script>
+    <script src="~/js/chat-hub.js"></script>
 }

@@ -1,6 +1,6 @@
 ﻿using DiscordApp.WebUI.Models;
 
-namespace DiscordApp.WebUI.Services
+namespace DiscordApp.WebUI.Abstract
 {
     public interface IChannelApiService
     {

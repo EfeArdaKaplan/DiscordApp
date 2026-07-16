@@ -1,4 +1,5 @@
-﻿using DiscordApp.WebUI.Models;
+﻿using DiscordApp.WebUI.Abstract;
+using DiscordApp.WebUI.Models;
 using System.Net.Http.Headers;
 
 namespace DiscordApp.WebUI.Services
@@ -57,6 +58,14 @@ namespace DiscordApp.WebUI.Services
         {
             var response = await SendAsync(HttpMethod.Post, "api/friendShip/respond-request", new { FriendShipId = friendShipId, IsAccepted =isAccepted });
             return response?.IsSuccessStatusCode ?? false;
+        }
+
+        public async Task<List<UserSearchResultViewModel>> GetFriendsAsync()
+        {
+            var response = await SendAsync(HttpMethod.Get, "api/FriendShip/friends");
+            if (response == null || !response.IsSuccessStatusCode) return new();
+
+            return await response.Content.ReadFromJsonAsync<List<UserSearchResultViewModel>>() ?? new();
         }
     }
 }

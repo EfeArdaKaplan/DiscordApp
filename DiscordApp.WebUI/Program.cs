@@ -1,3 +1,4 @@
+using DiscordApp.WebUI.Abstract;
 using DiscordApp.WebUI.Models;
 using DiscordApp.WebUI.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -36,6 +37,11 @@ builder.Services.AddHttpClient<IChannelApiService, ChannelApiService>(client =>
 });
 
 builder.Services.AddHttpClient<IFriendApiService, FriendApiService>(client =>
+{
+    client.BaseAddress = new Uri("https://localhost:7072");
+});
+
+builder.Services.AddHttpClient<IMessageApiService, MessageApiService>(client =>
 {
     client.BaseAddress = new Uri("https://localhost:7072");
 });

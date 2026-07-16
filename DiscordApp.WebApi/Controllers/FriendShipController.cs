@@ -28,11 +28,6 @@ namespace DiscordApp.WebApi.Controllers
             return User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.NameIdentifier || c.Type == "id" || c.Type == "UserId" || c.Type == "sub")?.Value;
         }
 
-        private string? GetUserID()
-        {
-            return User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.NameIdentifier || c.Type == "id" || c.Type == "UserId" || c.Type == "sub")?.Value;
-        }
-
         [HttpPost("send-request")]
         public IActionResult SendRequest([FromBody] SendFriendRequestDto dto)
         {

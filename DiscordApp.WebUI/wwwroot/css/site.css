@@ -68,6 +68,16 @@ input{font-family:inherit;}
 .rail-add{width:44px;height:44px;border-radius:16px;border:2px dashed var(--border);background:transparent;color:var(--text-mut);display:flex;align-items:center;justify-content:center;}
 
 .sidebar{width:240px;background:var(--bg-panel);border-right:1px solid var(--border);display:flex;flex-direction:column;}
+.sidebar-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+    .sidebar-wrapper .sidebar {
+        flex: 1;
+        min-height: 0;
+    }
 .sidebar-header{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
 .sidebar-header span{font-size:14px;font-weight:600;font-family:'Space Grotesk',sans-serif;}
 .sidebar-scroll{flex:1;overflow-y:auto;padding:12px 8px;}

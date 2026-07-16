@@ -1,23 +1,14 @@
 // Home/Index ekranı: sunucu/DM listesi, kanal seçimi, mesajlaşma, ses ekranı ve ayarlar.
 // window.CURRENT_USER ve window.SERVERS_DATA değerleri Index.cshtml içinde sunucudan basılır.
 let userName = window.CURRENT_USER || "Kullanıcı";
-let serversData = window.SERVERS_DATA || []; // [{id, name, channels:[{id,name,serverId}]}]
+let serversData = window.SERVERS_DATA || [];
+let friendsData = window.FRIENDS_DATA || [];
 let currentServerId = null;
-let currentThread = "Arda";
-let messageStore = {
-    "Arda": [
-        { author: "Arda", time: "14:02", text: "Bugünkü hedef: sayfa geçişlerini bitirmek." },
-        { author: "Sofia", time: "14:03", text: "Tamamdır, önce giriş ekranını hallediyorum." }
-    ],
-    "Deniz": [
-        { author: "Deniz", time: "11:20", text: "Kanal listesi tasarımını beğendim." }
-    ],
-    "Staj Grubu": [
-        { system: true, text: "Yerel sunucu çalışıyor · localhost:4000" },
-        { author: "Arda", time: "14:05", text: "Ses entegrasyonunu sonraya bırakıyoruz, önce arayüz." },
-        { author: "Mira (bot)", time: "14:05", text: "Not alındı." }
-    ]
-};
+let currentThread = "";
+let currentView = "dm"; // 'dm' ya da 'server'
+let currentDMFriendId = null;
+// Kanal mesajlaşması henüz gerçek API'ye bağlı değil, o yüzden şimdilik kanal başına boş bir mock depo tutuyoruz.
+let channelMessageStore = {};
 
 function showPage(name) {
     document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
@@ -31,8 +22,10 @@ function switchRailView(view, el) {
         document.getElementById('sidebar-dms').classList.remove('hidden');
         document.getElementById('sidebar-server').classList.add('hidden');
         document.getElementById('members-panel').classList.add('hidden');
-        selectDM(document.querySelector('#sidebar-dms .dm-item'), 'Arda', false);
-    } else {
+        currentView = 'dm';
+        renderDMList();
+    }
+    else {
         const serverId = parseInt(el.getAttribute('data-server-id'), 10);
         currentServerId = serverId;
 
@@ -65,7 +58,7 @@ function renderChannels(server) {
         empty.textContent = 'Henüz kanal yok';
         list.appendChild(empty);
         return;
-    }""
+    }
 
     channels.forEach((ch, index) => {
         const btn = document.createElement('button');
@@ -79,7 +72,7 @@ function renderChannels(server) {
     currentThread = channels[0].name;
     document.getElementById('chanIcon').textContent = '#';
     document.getElementById('chanTitle').textContent = channels[0].name;
-    if (!messageStore[currentThread]) messageStore[currentThread] = [];
+    if (!channelMessageStore[currentThread]) channelMessageStore[currentThread] = [];
     renderMessages();
 }
 
@@ -121,17 +114,96 @@ function selectChannel(el, name) {
     currentThread = name;
     document.getElementById('chanIcon').textContent = '#';
     document.getElementById('chanTitle').textContent = name;
-    if (!messageStore[currentThread]) messageStore[currentThread] = [];
+    if (!channelMessageStore[currentThread]) channelMessageStore[currentThread] = [];
     renderMessages();
 }
 
-function selectDM(el, name, isGroup) {
+function renderDMList() {
+    const list = document.getElementById('dmList');
+    list.innerHTML = '';
+
+    if (friendsData.length === 0) {
+        list.innerHTML = '<p class="section-label">Henüz arkadaşın yok, ＋ ile ekleyebilirsin.</p>';
+        return;
+    }
+
+    friendsData.forEach(friend => {
+        const btn = document.createElement('button');
+        btn.className = 'dm-item';
+        btn.innerHTML = `<span class="dm-avatar">${initials(friend.userName)}<span class="status-dot" style="background:var(--mint)"></span></span>
+      <span><span class="dm-name">${escapeHtml(friend.userName)}</span></span>`;
+        btn.onclick = () => selectDM(btn, friend);
+        list.appendChild(btn);
+    });
+
+    // Henüz kimse seçilmediği için orta ekranda boş/bilgilendirici bir mesaj göster
+    document.getElementById('chanTitle').textContent = 'Bir arkadaş seç';
+    document.getElementById('chanIcon').textContent = '👤';
+    document.getElementById('messages').innerHTML = '<p class="msg-system"><span>▸</span>Sohbet açmak için soldan bir arkadaş seç.</p>';
+    currentDMFriendId = null;
+}
+async function selectDM(el, friend) {
     document.querySelectorAll('#sidebar-dms .dm-item').forEach(b => b.classList.remove('active'));
     el.classList.add('active');
-    currentThread = name;
-    document.getElementById('chanIcon').textContent = isGroup ? '👥' : '👤';
-    document.getElementById('chanTitle').textContent = name;
-    renderMessages();
+
+    currentThread = friend.userName;
+    currentDMFriendId = friend.id;
+    document.getElementById('chanIcon').textContent = '👤';
+    document.getElementById('chanTitle').textContent = friend.userName;
+
+    await loadConversation(friend.id);
+}
+
+async function loadConversation(friendId) {
+    const box = document.getElementById('messages');
+    box.innerHTML = '<p class="msg-system"><span>▸</span>Yükleniyor...</p>';
+
+    try {
+        const response = await fetch(`/Home/GetConversation?otherUserId=${friendId}`);
+        const messages = await response.json();
+        renderRealMessages(messages);
+    } catch (err) {
+        console.error(err);
+        box.innerHTML = '<p class="msg-system"><span>▸</span>Mesajlar yüklenemedi.</p>';
+    }
+}
+
+function appendSingleMessage(m) {
+    const box = document.getElementById('messages');
+    const time = new Date(m.sentAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+    const d = document.createElement('div');
+    d.className = 'msg';
+    d.innerHTML = `<div class="msg-avatar">${initials(m.senderUserName)}</div>
+      <div class="msg-body">
+        <div class="msg-meta"><span class="msg-author">${escapeHtml(m.senderUserName)}</span><span class="msg-time">${time}</span></div>
+        <p>${escapeHtml(m.content)}</p>
+      </div>`;
+    box.appendChild(d);
+    box.scrollTop = box.scrollHeight;
+}
+
+function renderRealMessages(messages) {
+    const box = document.getElementById('messages');
+    box.innerHTML = '';
+
+    if (messages.length === 0) {
+        box.innerHTML = '<p class="msg-system"><span>▸</span>Henüz mesaj yok, ilk mesajı sen at.</p>';
+        return;
+    }
+
+    messages.forEach(m => {
+        const time = new Date(m.sentAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+        const d = document.createElement('div');
+        d.className = 'msg';
+        d.innerHTML = `<div class="msg-avatar">${initials(m.senderUserName)}</div>
+      <div class="msg-body">
+        <div class="msg-meta"><span class="msg-author">${escapeHtml(m.senderUserName)}</span><span class="msg-time">${time}</span></div>
+        <p>${escapeHtml(m.content)}</p>
+      </div>`;
+        box.appendChild(d);
+    });
+
+    box.scrollTop = box.scrollHeight;
 }
 
 function goVoice(roomName) {
@@ -143,7 +215,7 @@ function renderMessages() {
     const box = document.getElementById('messages');
     if (!box) return;
     box.innerHTML = '';
-    (messageStore[currentThread] || []).forEach(m => {
+    (channelMessageStore[currentThread] || []).forEach(m => {
         if (m.system) {
             const d = document.createElement('div');
             d.className = 'msg-system';
@@ -170,16 +242,46 @@ function initials(str) {
     return res.substring(0, 2);
 }
 
-function sendMessage() {
+async function callApi(url, method = 'GET', body = null) {
+    try {
+        const options = { method };
+        if (body) {
+            options.headers = { 'Content-Type': 'application/json' };
+            options.body = JSON.stringify(body);
+        }
+        const response = await fetch(url, options);
+        return await response.json();
+    } catch (err) {
+        console.error(err);
+        return { success: false, message: 'Bağlantı hatası oluştu!' };
+    }
+}
+
+async function sendMessage() {
     const input = document.getElementById('draftInput');
     const val = input.value.trim();
     if (!val) return;
-    const now = new Date();
-    const time = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
-    if (!messageStore[currentThread]) messageStore[currentThread] = [];
-    messageStore[currentThread].push({ author: userName, time, text: val });
-    input.value = '';
-    renderMessages();
+
+    if (currentView === 'dm' && currentDMFriendId) {
+        input.value = ''; // önce inputu temizle, kullanıcı beklemesin
+
+        const res = await callApi('/Home/SendMessage', 'POST', { receiverId: currentDMFriendId, content: val });
+
+        if (res.success) {
+            // Sunucuya gidip gelmeden, kendi mesajını anında ekrana bas
+            appendSingleMessage({
+                senderId: window.CURRENT_USER_ID,
+                senderUserName: window.CURRENT_USER,
+                content: val,
+                sentAt: new Date().toISOString()
+            });
+        } else {
+            input.value = val; // başarısızsa yazdığını geri koy
+            alert(res.message || 'Mesaj gönderilemedi.');
+        }
+    } else {
+        alert('Kanal mesajlaşması henüz aktif değil, bir sonraki adımda ekleyeceğiz.');
+    }
 }
 
 function pickTheme(el) {
@@ -201,10 +303,10 @@ function updateLocalUserProfile() {
 }
 
 // SUNUCU EKLEME POPUP (MODAL) İŞLEMLERİ
-
 document.addEventListener('DOMContentLoaded', () => {
     updateLocalUserProfile(); // Kullanıcı adını sol altta güncelle
     renderMessages();
+    renderDMList(); // Varsayılan görünüm DM olduğu için arkadaş listesini hemen doldur
 
     // '+' butonunu bul ve Model açma olayını bağla
     const addBtn = document.querySelector(".rail-add");
@@ -224,7 +326,6 @@ document.addEventListener('DOMContentLoaded', () => {
         switchRailView('server', firstServerBtn);
     }
 });
-
 function openServerModal() {
     const modal = document.getElementById("createServerModal");
     if (modal) {

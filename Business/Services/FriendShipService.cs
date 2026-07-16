@@ -51,27 +51,24 @@ namespace Business.Services
             var request = _context.FriendShips.FirstOrDefault(f => f.FriendShipId == dto.FriendShipId);
             if (request == null) return false;
 
-            if (dto.IsAccepted == 1)
-            {
-                request.Status = FriendShipStatus.Accepted;
-            }
-            else
-            {
-                request.Status = FriendShipStatus.Rejected;
-            }
+            request.Status = dto.IsAccepted == 1 ? FriendShipStatus.Accepted : FriendShipStatus.Rejected;
 
             _context.SaveChanges();
             return true;
         }
 
         // bir kullanıcının Arkadaş listesini getirme
-        public List<AppUser> GetFriends(int userId)
+        public List<UserSummaryDto> GetFriends(int userId)
         {
             var friendIds = _context.FriendShips
                 .Where(f => f.Status == FriendShipStatus.Accepted && (f.SenderId == userId || f.ReceiverId == userId))
                 .Select(f => f.SenderId == userId ? f.ReceiverId : f.SenderId)
                 .ToList();
-            return _context.Users.Where(u => friendIds.Contains(u.Id)).ToList();
+
+            return _context.Users
+                .Where(u => friendIds.Contains(u.Id))
+                .ProjectTo<UserSummaryDto>(_mapper.ConfigurationProvider)
+                .ToList();
         }
 
         public List<PendingRequestDto> GetPendingRequests (int userId)

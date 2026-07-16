@@ -1,6 +1,7 @@
 ﻿using DiscordApp.WebUI.Models;
+using DiscordApp.WebUI.Services;
 
-namespace DiscordApp.WebUI.Services
+namespace DiscordApp.WebUI.Abstract
 {
     public interface IAuthApiService
     {
