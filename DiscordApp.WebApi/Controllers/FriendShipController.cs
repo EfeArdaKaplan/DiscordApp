@@ -1,6 +1,8 @@
-﻿using Business.Dtos;
+﻿using AutoMapper;
+using Business.Dtos;
 using Business.Services;
 using Data.Context;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,21 +10,31 @@ namespace DiscordApp.WebApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class FriendShipController : ControllerBase
     {
         private readonly FriendShipService _friendshipService;
         private readonly ApiContext _context;
 
 
-        public FriendShipController(ApiContext context)
+        public FriendShipController(ApiContext context, IMapper mapper)
         {
             _context = context;
-            _friendshipService = new FriendShipService(_context);
+            _friendshipService = new FriendShipService(_context, mapper);
+        }
+
+        private string? GetUserID()
+        {
+            return User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.NameIdentifier || c.Type == "id" || c.Type == "UserId" || c.Type == "sub")?.Value;
         }
 
         [HttpPost("send-request")]
         public IActionResult SendRequest([FromBody] SendFriendRequestDto dto)
         {
+            var userId = GetUserID();
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            dto.SenderId = int.Parse(userId);
             var result = _friendshipService.SendRequest(dto);
             if (!result) return BadRequest("İstek Gönderilemedi. Geçersiz Kullanıcı veya zaten bir istek/arkadaşlık mevcut.");
 
@@ -37,11 +49,23 @@ namespace DiscordApp.WebApi.Controllers
 
             return Ok("Yanıtınız kaydedildi.");
         }
-        [HttpGet("friends/{userId}")]
-        public IActionResult GetFriends(int userId)
+
+        [HttpGet("pending")]
+        public IActionResult GetPendingRequests()
         {
-            var friends = _friendshipService.GetFriends(userId);
-            return Ok(friends);
+            var userId = GetUserID();
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            return Ok(_friendshipService.GetPendingRequests(int.Parse(userId)));
+        }
+
+        [HttpGet("friends")]
+        public IActionResult GetFriends()
+        {
+            var userId = GetUserID();
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            return Ok(_friendshipService.GetFriends(int.Parse(userId)));
         }
     }
 }

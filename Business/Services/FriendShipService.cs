@@ -1,4 +1,6 @@
-﻿using Business.Dtos;
+﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
+using Business.Dtos;
 using Core.Entities;
 using Core.Enums;
 using Data.Context;
@@ -12,9 +14,11 @@ namespace Business.Services
     public class FriendShipService
     {
         private readonly ApiContext _context;
-        public FriendShipService(ApiContext context)
+        private readonly IMapper _mapper;
+        public FriendShipService(ApiContext context, IMapper mapper)
         {
             _context = context;
+            _mapper = mapper;
         }
         public bool SendRequest(SendFriendRequestDto dto)
         {
@@ -68,6 +72,14 @@ namespace Business.Services
                 .Select(f => f.SenderId == userId ? f.ReceiverId : f.SenderId)
                 .ToList();
             return _context.Users.Where(u => friendIds.Contains(u.Id)).ToList();
+        }
+
+        public List<PendingRequestDto> GetPendingRequests (int userId)
+        {
+            return _context.FriendShips
+                .Where(f => f.ReceiverId == userId && f.Status == FriendShipStatus.Pending)
+                .ProjectTo<PendingRequestDto>(_mapper.ConfigurationProvider)
+                .ToList();
         }
     }
 }

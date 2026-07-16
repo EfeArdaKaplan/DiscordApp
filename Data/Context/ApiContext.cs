@@ -72,6 +72,10 @@ namespace Data.Context
                 .WithMany()
                 .HasForeignKey(us => us.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<AppUser>()
+                .HasIndex(u => u.UserName)
+                .IsUnique();
         }
     }
 }

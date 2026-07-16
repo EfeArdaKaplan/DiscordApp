@@ -1,4 +1,5 @@
 using Business.Abstract;
+using Business.Mapping;
 using Business.Services;
 using Business.Validators;
 using Core.Entities;
@@ -17,6 +18,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<ApiContext>(option => option.UseSqlServer(builder.Configuration.GetConnectionString("SqlServer")));
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IServerService, ServerService>(); //
+builder.Services.AddAutoMapper(cfg => { }, typeof(MappingProfile));
 // JWT Ayarları
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var secretKey = Encoding.UTF8.GetBytes(jwtSettings["Key"]!);

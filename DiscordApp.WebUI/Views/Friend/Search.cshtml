@@ -1,0 +1,67 @@
+﻿@{
+    ViewData["Title"] = "Arkadaş Ekle";
+}
+
+<div style="max-width:480px; margin:40px auto; background:var(--bg-panel); border:1px solid var(--border); border-radius:12px; padding:24px;">
+    <a href="/Home/Index" class="back-link">◀ Geri Dön</a>
+    <h2 style="color:var(--text-hi); margin-top:0;">Arkadaş Ekle</h2>
+    <p style="color:var(--text-mut); font-size:13px;">Kullanıcı adını yazmaya başla, eşleşenler aşağıda çıkacak.</p>
+
+    <input type="text" id="searchInput" placeholder="Kullanıcı adı ara..."
+           style="width:100%; padding:10px; border-radius:6px; border:1px solid var(--border); background:var(--bg-raised); color:var(--text-hi); box-sizing:border-box; outline:none; margin:12px 0;" />
+
+    <div id="searchResults"></div>
+</div>
+
+@section Scripts {
+    <script>
+        const searchInput = document.getElementById('searchInput');
+        const resultsBox = document.getElementById('searchResults');
+        let debounceTimer;
+
+        searchInput.addEventListener('input', () => {
+            clearTimeout(debounceTimer);
+            const value = searchInput.value.trim();
+            if (value.length < 2) { resultsBox.innerHTML = ''; return; }
+
+            debounceTimer = setTimeout(async () => {
+                const response = await fetch(`/Friend/SearchUsers?username=${encodeURIComponent(value)}`);
+                const users = await response.json();
+                renderResults(users);
+            }, 300);
+        });
+
+        function renderResults(users) {
+            resultsBox.innerHTML = '';
+            if (users.length === 0) {
+                resultsBox.innerHTML = '<p style="color:var(--text-mut); font-size:13px;">Kullanıcı bulunamadı.</p>';
+                return;
+            }
+            users.forEach(u => {
+                const row = document.createElement('div');
+                row.style.cssText = 'display:flex; align-items:center; justify-content:space-between; padding:10px; border-bottom:1px solid var(--border);';
+                row.innerHTML = `<span style="color:var(--text-hi);">${u.userName}</span>
+                    <button style="background:var(--mint); border:none; padding:6px 14px; border-radius:6px; cursor:pointer; font-weight:600;" onclick="sendRequest(${u.id}, this)">İstek Gönder</button>`;
+                resultsBox.appendChild(row);
+            });
+        }
+
+        async function sendRequest(receiverId, btn) {
+            btn.disabled = true;
+            btn.textContent = 'Gönderiliyor...';
+            const response = await fetch('/Friend/SendRequest', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ receiverId })
+            });
+            const data = await response.json();
+            if (data.success) {
+                btn.textContent = 'İstek Gönderildi ✓';
+            } else {
+                btn.disabled = false;
+                btn.textContent = 'İstek Gönder';
+                alert(data.message || 'Bir hata oluştu.');
+            }
+        }
+    </script>
+}

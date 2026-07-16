@@ -1,4 +1,6 @@
-﻿using Business.Dtos;
+﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
+using Business.Dtos;
 using Core.Entities;
 using Data.Context;
 using BCrypt.Net;
@@ -9,17 +11,19 @@ namespace Business.Services
     public class AuthService
     {
         private readonly ApiContext _context;
+        private readonly IMapper _mapper;
 
-        public AuthService(ApiContext context)
+        public AuthService(ApiContext context, IMapper mapper)
         {
             _context = context;
+            _mapper = mapper;
         }
 
         // Kayit Olma islemi
         public bool Register(RegisterDto Dto)
         {
             // Bu email adresiyle önceden kayıt oluşturulmuş mu ?
-            var existingUser = _context.Users.FirstOrDefault(u => u.Email == Dto.Email);
+            var existingUser = _context.Users.FirstOrDefault(u => u.Email == Dto.Email || u.UserName == Dto.UserName );
             if (existingUser != null)
             {
                 return false; // kullanıcı var
@@ -62,9 +66,11 @@ namespace Business.Services
 
             return user; 
         }
-        public List<AppUser> GetAllUsers()
+        public List<UserSummaryDto> GetAllUsers()
         {
-            return _context.Users.ToList();
+            return _context.Users
+                .ProjectTo<UserSummaryDto>(_mapper.ConfigurationProvider)
+                .ToList();
         }
     }
 }

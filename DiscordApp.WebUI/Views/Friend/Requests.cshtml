@@ -1,0 +1,45 @@
+﻿@model List<DiscordApp.WebUI.Models.PendingRequestViewModel>
+@{
+    ViewData["Title"] = "Arkadaşlık İstekleri";
+}
+
+<div style="max-width:480px; margin:40px auto; background:var(--bg-panel); border:1px solid var(--border); border-radius:12px; padding:24px;">
+    <a href="/Home/Index" class="back-link">◀ Geri Dön</a>
+    <h2 style="color:var(--text-hi); margin-top:0;">Bekleyen İstekler</h2>
+    @if (!Model.Any())
+    {
+        <p style="color:var(--text-mut); font-size:13px;">Bekleyen istek yok.</p>
+    }
+    else
+    {
+        foreach (var req in Model)
+        {
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:10px; border-bottom:1px solid var(--border);" data-id="@req.FriendShipId">
+                <span style="color:var(--text-hi);">@req.SenderUserName</span>
+                <div style="display:flex; gap:8px;">
+                    <button style="background:var(--mint); border:none; padding:6px 14px; border-radius:6px; cursor:pointer; font-weight:600;" onclick="respond(@req.FriendShipId, 1, this)">Kabul Et</button>
+                    <button style="background:transparent; border:1px solid var(--border); color:var(--text-mut); padding:6px 14px; border-radius:6px; cursor:pointer;" onclick="respond(@req.FriendShipId, 0, this)">Reddet</button>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@section Scripts {
+    <script>
+        async function respond(friendShipId, isAccepted, btn) {
+            const row = btn.closest('div[data-id]');
+            const response = await fetch('/Friend/Respond', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ friendShipId, isAccepted })
+            });
+            const data = await response.json();
+            if (data.success) {
+                row.remove();
+            } else {
+                alert(data.message || 'Bir hata oluştu.');
+            }
+        }
+    </script>
+}

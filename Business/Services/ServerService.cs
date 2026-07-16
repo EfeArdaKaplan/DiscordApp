@@ -1,4 +1,6 @@
-﻿using Business.Abstract;
+﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
+using Business.Abstract;
 using Business.Dtos;
 using Core.Entities;
 using Data.Context;
@@ -12,10 +14,12 @@ namespace Business.Services
     public class ServerService : IServerService
     {
         private readonly ApiContext _context;
+        private readonly IMapper _mapper;
 
-        public ServerService(ApiContext context)
+        public ServerService(ApiContext context, IMapper mapper)
         {
             _context = context;
+            _mapper = mapper;
         }
 
         public async Task<List<ServerDto>> GetUserServersAsync(string userId)
@@ -25,19 +29,9 @@ namespace Business.Services
                 return new List<ServerDto>();
 
             return await _context.UserServers
-                .Where(us => us.UserId == parsedUserId) 
+                .Where(us => us.UserId == parsedUserId)
                 .Select(us => us.Server)
-                .Select(s => new ServerDto
-                {
-                    Id = s.Id,
-                    Name = s.Name,
-                    Channels = s.Channels.Select(c => new ChannelDto
-                    {
-                        Id = c.Id,
-                        Name = c.Name,
-                        ServerId = c.ServerId
-                    }).ToList()
-                })
+                .ProjectTo<ServerDto>(_mapper.ConfigurationProvider)
                 .ToListAsync();
         }
 
@@ -111,18 +105,9 @@ namespace Business.Services
             if (!isMember)
                 return new List<MemberDto>();
 
-            var server = await _context.Servers.FirstOrDefaultAsync(s => s.Id == serverId);
-            if (server == null)
-                return new List<MemberDto>();
-
             return await _context.UserServers
                 .Where(us => us.ServerId == serverId)
-                .Select(us => new MemberDto
-                {
-                    Id = us.User.Id,
-                    UserName = us.User.UserName ?? "Kullanıcı",
-                    IsOwner = us.UserId == server.OwnerId
-                })
+                .ProjectTo<MemberDto>(_mapper.ConfigurationProvider)
                 .ToListAsync();
         }
         /*
