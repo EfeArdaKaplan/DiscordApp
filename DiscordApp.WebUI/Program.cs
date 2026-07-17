@@ -25,25 +25,29 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 builder.Services.AddHttpContextAccessor();
 
 // 4. AuthApiService & HttpClient Kaydı
+// API adresi TEK bir yerden okunuyor: appsettings.json -> ApiSettings:BaseUrl
+// Cloudflare tunnel URL'i değiştikçe sadece o değeri güncellemek yeterli.
+var apiBaseUrl = builder.Configuration["ApiSettings:BaseUrl"]
+    ?? throw new InvalidOperationException("ApiSettings:BaseUrl appsettings.json içinde tanımlı değil.");
+
 builder.Services.AddHttpClient<IAuthApiService, AuthApiService>(client =>
 {
-    // WebAPI projenin çalıştığı port ve adresi buraya tanımlıyoruz
-    client.BaseAddress = new Uri("https://localhost:7072/");
+    client.BaseAddress = new Uri(apiBaseUrl);
 });
 
 builder.Services.AddHttpClient<IChannelApiService, ChannelApiService>(client =>
 {
-    client.BaseAddress = new Uri("https://localhost:7072");
+    client.BaseAddress = new Uri(apiBaseUrl);
 });
 
 builder.Services.AddHttpClient<IFriendApiService, FriendApiService>(client =>
 {
-    client.BaseAddress = new Uri("https://localhost:7072");
+    client.BaseAddress = new Uri(apiBaseUrl);
 });
 
 builder.Services.AddHttpClient<IMessageApiService, MessageApiService>(client =>
 {
-    client.BaseAddress = new Uri("https://localhost:7072");
+    client.BaseAddress = new Uri(apiBaseUrl);
 });
 
 var app = builder.Build();

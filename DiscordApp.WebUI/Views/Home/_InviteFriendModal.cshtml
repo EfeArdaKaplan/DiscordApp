@@ -1,0 +1,13 @@
+﻿<!-- ARKADAŞ DAVET MODAL (POPUP) -->
+<div id="inviteFriendModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:9999; align-items:center; justify-content:center;">
+    <div style="background:#2b2d31; padding:24px; border-radius:8px; width:380px; max-height:70vh; display:flex; flex-direction:column; box-shadow:0 8px 24px rgba(0,0,0,0.5); color:#dbdee1;">
+        <h3 style="margin-top:0; color:#fff;">Arkadaş Davet Et</h3>
+        <p style="font-size:13px; color:#949ba4;">Bu sunucuya davet etmek istediğin arkadaşını seç.</p>
+
+        <div id="inviteFriendList" style="overflow-y:auto; margin:12px 0; flex:1;"></div>
+
+        <div style="display:flex; justify-content:flex-end;">
+            <button onclick="closeInviteFriendModal()" style="background:transparent; border:none; color:#fff; cursor:pointer; padding:8px 16px;">Kapat</button>
+        </div>
+    </div>
+</div>

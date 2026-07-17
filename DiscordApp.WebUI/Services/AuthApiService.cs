@@ -8,7 +8,9 @@ namespace DiscordApp.WebUI.Models
     public class AuthApiService : IAuthApiService
     {
         private readonly HttpClient _httpClient;
-        private const string ApiBaseUrl = "https://localhost:7072/api/Auth/";
+        // BaseAddress, Program.cs'te ApiSettings:BaseUrl'den ayarlanıyor (AddHttpClient).
+        // Burada sadece controller'a göreli path kalıyor.
+        private const string ApiRoute = "api/Auth/";
 
         public AuthApiService(HttpClient httpClient)
         {
@@ -33,7 +35,7 @@ namespace DiscordApp.WebUI.Models
                 var jsonModel = JsonConvert.SerializeObject(model);
                 var requestContent = new StringContent(jsonModel, Encoding.UTF8, "application/json");
 
-                var response = await _httpClient.PostAsync($"{ApiBaseUrl}{endpoint}", requestContent);
+                var response = await _httpClient.PostAsync($"{ApiRoute}{endpoint}", requestContent);
                 var content = await response.Content.ReadAsStringAsync();
 
                 if (response.IsSuccessStatusCode)

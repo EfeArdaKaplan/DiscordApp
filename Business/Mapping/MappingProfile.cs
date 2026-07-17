@@ -25,6 +25,10 @@ namespace Business.Mapping
 
             CreateMap<FriendShip, PendingRequestDto>()
                 .ForMember(dest => dest.SenderUserName, opt => opt.MapFrom(src => src.Sender.UserName));
+            CreateMap<ServerInvitation, PendingServerInvitationDto>()
+                .ForMember(dest => dest.InvitationId, opt => opt.MapFrom(src => src.Id))
+                .ForMember(dest => dest.ServerName, opt => opt.MapFrom(src => src.Server.Name))
+                .ForMember(dest => dest.SenderUserName, opt => opt.MapFrom(src => src.Sender.UserName));
         }
     }
 }

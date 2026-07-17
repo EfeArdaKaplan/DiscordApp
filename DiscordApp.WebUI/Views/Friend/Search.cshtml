@@ -39,9 +39,12 @@
             }
             users.forEach(u => {
                 const row = document.createElement('div');
-                row.style.cssText = 'display:flex; align-items:center; justify-content:space-between; padding:10px; border-bottom:1px solid var(--border);';
+                row.style.cssText = 'display:flex; align-items:center; justify-content:space-between; padding:10px; border-bottom:1px solid var(--border); gap:8px;';
+
                 row.innerHTML = `<span style="color:var(--text-hi);">${u.userName}</span>
-                    <button style="background:var(--mint); border:none; padding:6px 14px; border-radius:6px; cursor:pointer; font-weight:600;" onclick="sendRequest(${u.id}, this)">İstek Gönder</button>`;
+                    <div style="display:flex; gap:6px;">
+                      <button style="background:var(--mint); border:none; padding:6px 14px; border-radius:6px; cursor:pointer; font-weight:600;" onclick="sendRequest(${u.id}, this)">İstek Gönder</button>
+                    </div>`;
                 resultsBox.appendChild(row);
             });
         }

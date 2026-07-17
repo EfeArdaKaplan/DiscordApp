@@ -22,6 +22,7 @@ namespace Data.Context
 
         public DbSet<Server> Servers { get; set; }
         public DbSet<UserServer> UserServers { get; set; }
+        public DbSet<ServerInvitation> ServerInvitations { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -51,6 +52,29 @@ namespace Data.Context
                 .WithMany()
                 .HasForeignKey(f => f.ReceiverId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // server davet ilişkileri
+            modelBuilder.Entity<ServerInvitation>()
+                .HasOne(si => si.Sender)
+                .WithMany()
+                .HasForeignKey(si => si.SenderId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ServerInvitation>()
+                .HasOne(si => si.Receiver)
+                .WithMany()
+                .HasForeignKey(si => si.ReceiverId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ServerInvitation>()
+                .HasOne(si => si.Server)
+                .WithMany()
+                .HasForeignKey(si => si.ServerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Server>()
+                .HasIndex(s => s.InviteCode)
+                .IsUnique();
 
             // Channel -> Server ilişkisi (Bir sunucunun birden fazla kanalı olur)
             modelBuilder.Entity<Channel>()

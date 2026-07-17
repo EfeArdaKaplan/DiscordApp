@@ -34,6 +34,26 @@ namespace DiscordApp.WebUI.Controllers
             return View();
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetPendingCount()
+        {
+            try
+            {
+                var pendingFriends = await _friendApiService.GetPendingRequestsAsync();
+                int friendCount = pendingFriends?.Count() ?? 0;
+
+                var pendingInvites = await _channelApiService.GetPendingServerInvitesAsync();
+                int inviteCount = pendingInvites?.Count() ?? 0;
+
+                return Json(new { count = friendCount + inviteCount });
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Bildirim sayısı alınırken hata: {ex.Message}");
+                return Json(new { count = 0 });
+            }
+        }
+
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
@@ -52,6 +72,14 @@ namespace DiscordApp.WebUI.Controllers
                 return Ok(new { success = true }); 
 
             return BadRequest(new { success = false, message = "Sunucu Oluşturulamadı" });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetInviteLink(int serverId)
+        {
+            var code = await _channelApiService.GetInviteLinkAsync(serverId);
+            if (string.IsNullOrEmpty(code)) return Json(new { success = false, message = "Davet linki alınamadı" });
+            return Json(new { success = true, inviteCode = code });
         }
 
         [HttpGet]

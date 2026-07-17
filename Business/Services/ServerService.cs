@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Business.Abstract;
+using Core.Enums;
 using Business.Dtos;
 using Core.Entities;
 using Data.Context;
@@ -133,5 +134,91 @@ namespace Business.Services
             await _context.SaveChangesAsync();
             return true; 
         }*/
+
+        private async Task<int?> ParseUserIdAsync(string userId)
+        {
+            return int.TryParse(userId, out int id) ? id : null;
+        }
+
+        private async Task<bool> IsMemberAsync(int serverId, int userId)
+        {
+            return await _context.UserServers.AnyAsync(us => us.ServerId == serverId && us.UserId == userId);
+        }
+
+        private async Task AddMemberIfNotExistsAsync(int serverId, int userId)
+        {
+            if (!await IsMemberAsync(serverId, userId))
+                _context.UserServers.Add(new UserServer { UserId = userId, ServerId = serverId });
+        }
+        public async Task<string> GetInviteLinkAsync(int serverId, string userId)
+        {
+            var uid = await ParseUserIdAsync(userId);
+            if (uid == null || !await IsMemberAsync(serverId, uid.Value)) return string.Empty;
+
+            var server = await _context.Servers.FirstOrDefaultAsync(s => s.Id == serverId);
+            if (server == null) return string.Empty;
+
+            if (string.IsNullOrEmpty(server.InviteCode))
+            {
+                server.InviteCode = Guid.NewGuid().ToString("N")[..8];
+                await _context.SaveChangesAsync();
+            }
+            return server.InviteCode;
+        }
+
+        public async Task<JoinByInviteResultDto> JoinByInviteCodeAsync(string inviteCode, string userId)
+        {
+            var uid = await ParseUserIdAsync(userId);
+            if (uid == null) return new JoinByInviteResultDto { Success = false, Message = "Geçersiz kullanıcı." };
+
+            var server = await _context.Servers.FirstOrDefaultAsync(s => s.InviteCode == inviteCode);
+            if (server == null) return new JoinByInviteResultDto { Success = false, Message = "Davet linki geçersiz." };
+
+            bool wasAlreadyMember = await IsMemberAsync(server.Id, uid.Value);
+            await AddMemberIfNotExistsAsync(server.Id, uid.Value);
+            await _context.SaveChangesAsync();
+
+            return new JoinByInviteResultDto { Success = true, ServerId = server.Id, Message = wasAlreadyMember ? "Zaten üyesin." : null };
+        }
+
+        public async Task<bool> SendServerInvitationAsync(SendServerInvitationDto dto, string senderUserId)
+        {
+            var sid = await ParseUserIdAsync(senderUserId);
+            if (sid == null || !await IsMemberAsync(dto.ServerId, sid.Value)) return false;
+            if (await IsMemberAsync(dto.ServerId, dto.ReceiverId)) return false;
+
+            bool alreadyInvited = await _context.ServerInvitations.AnyAsync(si =>
+                si.ServerId == dto.ServerId && si.ReceiverId == dto.ReceiverId && si.Status == FriendShipStatus.Pending);
+            if (alreadyInvited) return false;
+
+            _context.ServerInvitations.Add(new ServerInvitation { ServerId = dto.ServerId, SenderId = sid.Value, ReceiverId = dto.ReceiverId });
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> RespondServerInvitationAsync(ServerInvitationActionDto dto, string receiverUserId)
+        {
+            var rid = await ParseUserIdAsync(receiverUserId);
+            var invite = await _context.ServerInvitations.FirstOrDefaultAsync(si => si.Id == dto.InvitationId);
+            if (rid == null || invite == null || invite.ReceiverId != rid.Value) return false;
+
+            invite.Status = dto.IsAccepted == 1 ? FriendShipStatus.Accepted : FriendShipStatus.Rejected;
+            if (invite.Status == FriendShipStatus.Accepted)
+                await AddMemberIfNotExistsAsync(invite.ServerId, rid.Value);
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<List<PendingServerInvitationDto>> GetPendingServerInvitationsAsync(string userId)
+        {
+            var uid = await ParseUserIdAsync(userId);
+            if (uid == null) return new();
+
+            return await _context.ServerInvitations
+                .Where(si => si.ReceiverId == uid.Value && si.Status == FriendShipStatus.Pending)
+                .ProjectTo<PendingServerInvitationDto>(_mapper.ConfigurationProvider)
+                .ToListAsync();
+        }
     }
 }

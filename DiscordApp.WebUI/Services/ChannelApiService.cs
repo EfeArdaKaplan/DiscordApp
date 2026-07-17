@@ -34,108 +34,101 @@ namespace DiscordApp.WebUI.Services
             return token;
         }
 
-        public async Task<List<ServerViewModel>> GetUserServersAsync()
+        // Tüm API çağrılarının ortak iskeleti: token ekleme, gönderme, JSON'a çevirme, hata yutma.
+        private async Task<T?> SendAsync<T>(HttpMethod method, string url, object? body = null)
         {
             try
             {
-                var token = GetToken();
-                var request = new HttpRequestMessage(HttpMethod.Get, "api/Server/UserServers");
+                var request = new HttpRequestMessage(method, url);
+                if (body != null) request.Content = JsonContent.Create(body);
 
+                var token = GetToken();
                 if (!string.IsNullOrEmpty(token))
-                {
                     request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                }
 
                 var response = await _httpClient.SendAsync(request);
+                if (!response.IsSuccessStatusCode) return default;
 
-                if (response.IsSuccessStatusCode)
-                {
-                    var result = await response.Content.ReadFromJsonAsync<List<ServerViewModel>>();
-                    return result ?? new List<ServerViewModel>();
-                }
-
-                return new List<ServerViewModel>();
+                return await response.Content.ReadFromJsonAsync<T>();
             }
             catch
             {
-                return new List<ServerViewModel>();
+                return default;
             }
+        }
+
+        // Sadece başarı/başarısızlık dönen (gövdesiz) POST istekleri için kısayol.
+        private async Task<bool> PostSuccessAsync(string url, object? body = null)
+        {
+            try
+            {
+                var request = new HttpRequestMessage(HttpMethod.Post, url);
+                if (body != null) request.Content = JsonContent.Create(body);
+
+                var token = GetToken();
+                if (!string.IsNullOrEmpty(token))
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                var response = await _httpClient.SendAsync(request);
+                return response.IsSuccessStatusCode;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public async Task<List<ServerViewModel>> GetUserServersAsync()
+        {
+            var result = await SendAsync<List<ServerViewModel>>(HttpMethod.Get, "api/Server/UserServers");
+            return result ?? new List<ServerViewModel>();
         }
 
         public async Task<List<MemberViewModel>> GetServerMembersAsync(int serverId)
         {
-            try
-            {
-                var token = GetToken();
-                var request = new HttpRequestMessage(HttpMethod.Get, $"api/Server/{serverId}/Members");
-
-                if (!string.IsNullOrEmpty(token))
-                {
-                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                }
-
-                var response = await _httpClient.SendAsync(request);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    var result = await response.Content.ReadFromJsonAsync<List<MemberViewModel>>();
-                    return result ?? new List<MemberViewModel>();
-                }
-
-                return new List<MemberViewModel>();
-            }
-            catch
-            {
-                return new List<MemberViewModel>();
-            }
+            var result = await SendAsync<List<MemberViewModel>>(HttpMethod.Get, $"api/Server/{serverId}/Members");
+            return result ?? new List<MemberViewModel>();
         }
 
         public async Task<bool> CreateServerAsync(string serverName)
         {
-            try
-            {
-                var token = GetToken();
-                var request = new HttpRequestMessage(HttpMethod.Post, "api/Server/Create")
-                {
-                    Content = JsonContent.Create(new { Name = serverName })
-                };
-
-                if (!string.IsNullOrEmpty(token))
-                {
-                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                }
-
-                var response = await _httpClient.SendAsync(request);
-                return response.IsSuccessStatusCode;
-            }
-            catch
-            {
-                return false;
-            }
+            return await PostSuccessAsync("api/Server/Create", new { Name = serverName });
         }
 
         public async Task<bool> CreateChannelAsync(int serverId, string channelName)
         {
-            try
-            {
-                var token = GetToken();
-                var request = new HttpRequestMessage(HttpMethod.Post, "api/Channel/Create")
-                {
-                    Content = JsonContent.Create(new { ServerId = serverId, Name = channelName })
-                };
-
-                if (!string.IsNullOrEmpty(token))
-                {
-                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                }
-
-                var response = await _httpClient.SendAsync(request);
-                return response.IsSuccessStatusCode;
-            }
-            catch
-            {
-                return false;
-            }
+            return await PostSuccessAsync("api/Channel/Create", new { ServerId = serverId, Name = channelName });
         }
+
+        public async Task<string?> GetInviteLinkAsync(int serverId)
+        {
+            var result = await SendAsync<InviteLinkResponse>(HttpMethod.Get, $"api/Server/{serverId}/InviteLink");
+            return result?.InviteCode;
+        }
+
+        public async Task<(bool Success, string? Message, int? ServerId)> JoinByInviteAsync(string inviteCode)
+        {
+            var result = await SendAsync<JoinByInviteResponse>(HttpMethod.Post, "api/Server/JoinByInvite", new { InviteCode = inviteCode });
+            return (result?.Success ?? false, result?.Message, result?.ServerId);
+        }
+
+        public async Task<bool> InviteFriendToServerAsync(int serverId, int receiverId)
+        {
+            return await PostSuccessAsync("api/Server/InviteFriend", new { ServerId = serverId, ReceiverId = receiverId });
+        }
+
+        public async Task<List<PendingServerInvitationViewModel>> GetPendingServerInvitesAsync()
+        {
+            var result = await SendAsync<List<PendingServerInvitationViewModel>>(HttpMethod.Get, "api/Server/PendingInvites");
+            return result ?? new List<PendingServerInvitationViewModel>();
+        }
+
+        public async Task<bool> RespondServerInviteAsync(int invitationId, int isAccepted)
+        {
+            return await PostSuccessAsync("api/Server/RespondInvite", new { InvitationId = invitationId, IsAccepted = isAccepted });
+        }
+
+        private class InviteLinkResponse { public bool Success { get; set; } public string? InviteCode { get; set; } }
+        private class JoinByInviteResponse { public bool Success { get; set; } public string? Message { get; set; } public int? ServerId { get; set; } }
     }
 }

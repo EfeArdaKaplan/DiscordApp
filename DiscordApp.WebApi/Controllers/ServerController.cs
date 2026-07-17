@@ -65,5 +65,59 @@ namespace DiscordApp.WebApi.Controllers
                 c.Type == "UserId" ||
                 c.Type == "sub")?.Value;
         }
+
+        [HttpGet("{serverId}/InviteLink")]
+        public async Task<IActionResult> GetInviteLink (int serverId)
+        {
+            var userId = GetUserId();
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var code = await _serverService.GetInviteLinkAsync(serverId, userId);
+            if (string.IsNullOrEmpty(code)) return BadRequest(new { success = false, message = "Bu sunucunun üyesi değilsin" });
+
+            return Ok(new { success = true, inviteCode = code });
+        }
+
+        [HttpPost("JoinByInvite")]
+        public async Task<IActionResult> JoinByInvite([FromBody] JoinByInviteDto dto)
+        {
+            var userId = GetUserId();
+            if (string.IsNullOrEmpty (userId)) return Unauthorized();
+
+            var result = await _serverService.JoinByInviteCodeAsync(dto.InviteCode, userId);
+            if (!result.Success) return BadRequest(result);
+            return Ok(result);
+        }
+
+        [HttpPost("InviteFriend")]
+        public async Task<IActionResult> InviteFriend([FromBody] SendServerInvitationDto dto)
+        {
+            var userId = GetUserId();
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var result = await _serverService.SendServerInvitationAsync(dto, userId);
+            if (!result) return BadRequest(new { success = false, message = "Davet Gönderilemedi (zaten üye/davetli" });
+            return Ok(new { success = true });
+        }
+
+        [HttpPost("RespondInvite")]
+        public async Task<IActionResult> RespondInvite([FromBody] ServerInvitationActionDto dto)
+        {
+            var userId = GetUserId();
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var result = await _serverService.RespondServerInvitationAsync(dto, userId);
+            if (!result) return BadRequest(new { success = false, message = "İşlem başarısız" });
+            return Ok(new { success = true });
+        }
+
+        [HttpGet("PendingInvites")]
+        public async Task<IActionResult> PendingInvites()
+        {
+            var userId = GetUserId();
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            return Ok(await _serverService.GetPendingServerInvitationsAsync(userId));
+        }
     }
 }

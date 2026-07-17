@@ -67,5 +67,20 @@ namespace DiscordApp.WebApi.Controllers
 
             return Ok(_friendshipService.GetFriends(int.Parse(userId)));
         }
+        [HttpGet("pending-count")]
+        public IActionResult GetPendingCount()
+        {
+            var userId = GetUserID();
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var parsedUserId = int.Parse(userId);
+            var pendingFriendsCount = _friendshipService.GetPendingRequests(parsedUserId).Count();
+
+            var pendingServerInvitesCount = _context.ServerInvitations
+                .Count(si => si.ReceiverId == parsedUserId && si.Status == 0); 
+
+
+            return Ok(new { count = pendingFriendsCount + pendingServerInvitesCount });
+        }
     }
 }

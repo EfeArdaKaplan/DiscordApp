@@ -1,4 +1,5 @@
 @model List<DiscordApp.WebUI.Models.ServerViewModel>
+@inject IConfiguration Configuration
 
 @{
     ViewData["Title"] = "Sohbet";
@@ -6,6 +7,11 @@
     var displayName = ViewData["UserName"]?.ToString() ?? "Kullanıcı";
     var userInitials = string.Concat(displayName.Split(' ').Where(w => w.Length > 0).Select(w => char.ToUpper(w[0]))).PadRight(1, 'K');
     if (userInitials.Length > 2) userInitials = userInitials.Substring(0, 2);
+}
+
+@if (TempData["InviteMessage"] != null) // davet vars gosterck
+{
+    <script>alert(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["InviteMessage"])));</script>
 }
 @using System.Linq
 
@@ -35,7 +41,11 @@
     <div class="sidebar-wrapper">
          <!-- sidebar: server channels -->
         <div id="sidebar-server" class="sidebar hidden">
-      <div class="sidebar-header"><span id="currentServerName">Sunucu</span><span style="color:var(--text-mut)">▾</span></div>
+                <div class="sidebar-header">
+                    <span id="currentServerName">Sunucu</span>
+                    <button class="icon-btn" onclick="copyInviteLink()" title="Davet Linki Kopyala" style="color:var(--text-mut)">🔗</button>
+                    <button class="icon-btn" onclick="openInviteFriendModal()" title="Arkadaş Davet Et" style="color:var(--text-mut)">➕</button>
+                </div>
       <div class="sidebar-scroll">
         <p class="section-label">Metin Kanalları</p>
         <div id="channelList"></div>
@@ -173,6 +183,7 @@
 
 @await Html.PartialAsync("_createServerModel")
 @await Html.PartialAsync("_CreateChannelModal")
+@await Html.PartialAsync("_InviteFriendModal")
 
 @section Scripts {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
@@ -182,7 +193,7 @@
                 User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.NameIdentifier)?.Value));
         window.JWT_TOKEN = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
                 User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value));
-        window.HUB_URL = "https://localhost:7072/hubs/chat";
+        window.HUB_URL = "@(Configuration["ApiSettings:BaseUrl"])/hubs/chat";
 
         window.SERVERS_DATA = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
                 Model ?? new List<DiscordApp.WebUI.Models.ServerViewModel>(),

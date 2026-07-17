@@ -15,6 +15,32 @@ function showPage(name) {
     document.getElementById('page-' + name).classList.remove('hidden');
 }
 
+// davet kopyalama
+async function copyInviteLink() {
+    if (!currentServerId) { alert('Önce bir sunucu seç.'); return; }
+    const res = await callApi(`/Home/GetInviteLink?serverId=${currentServerId}`);
+    if (res.success) {
+        const link = `${window.location.origin}/invite/${res.inviteCode}`;
+        navigator.clipboard.writeText(link);
+        alert('Davet linki kopyalandı:\n' + link);
+    } else {
+        alert(res.message || 'Davet linki alınamadı.');
+    }
+}
+
+// davet etme
+async function inviteFriendToCurrentServer(receiverId, btn) {
+    btn.disabled = true;
+    const res = await fetch('/Friend/InviteToServer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ serverId: currentServerId, receiverId })
+    });
+    const data = await res.json();
+    btn.textContent = data.success ? 'Gönderildi ✓' : (data.message || 'Hata');
+    if (!data.success) btn.disabled = false;
+}
+
 function switchRailView(view, el) {
     document.querySelectorAll('.rail-btn').forEach(b => b.classList.remove('active'));
     el.classList.add('active');
@@ -392,6 +418,52 @@ function closeChannelModal() {
     if (modal) modal.style.display = "none";
     const input = document.getElementById("newChannelNameInput");
     if (input) input.value = "";
+}
+
+function openInviteFriendModal() {
+    if (!currentServerId) { alert('Önce bir sunucu seç.'); return; }
+
+    const list = document.getElementById('inviteFriendList');
+    list.innerHTML = '';
+
+    if (friendsData.length === 0) {
+        list.innerHTML = '<p style="color:#949ba4; font-size:13px;">Davet edebileceğin bir arkadaşın yok.</p>';
+    } else {
+        friendsData.forEach(friend => {
+            const row = document.createElement('div');
+            row.style.cssText = 'display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid #3f4147;';
+            row.innerHTML = `<span>${escapeHtml(friend.userName)}</span>
+                <button style="background:#5865f2; border:none; color:#fff; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:12px;">Davet Et</button>`;
+            row.querySelector('button').onclick = (e) => inviteFriendToCurrentServer(friend.id, e.target);
+            list.appendChild(row);
+        });
+    }
+
+    document.getElementById('inviteFriendModal').style.display = 'flex';
+}
+
+function closeInviteFriendModal() {
+    document.getElementById('inviteFriendModal').style.display = 'none';
+}
+
+async function inviteFriendToCurrentServer(receiverId, btn) {
+    btn.disabled = true;
+    btn.textContent = 'Gönderiliyor...';
+
+    const res = await fetch('/Friend/InviteToServer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ serverId: currentServerId, receiverId })
+    });
+    const data = await res.json();
+
+    if (data.success) {
+        btn.textContent = 'Gönderildi ✓';
+    } else {
+        btn.disabled = false;
+        btn.textContent = 'Davet Et';
+        alert(data.message || 'Davet gönderilemedi.');
+    }
 }
 
 async function submitNewChannel() {

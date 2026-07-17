@@ -24,6 +24,31 @@
         }
     }
 </div>
+<div style="max-width:480px; margin:20px auto; background:var(--bg-panel); border:1px solid var(--border); border-radius:12px; padding:24px;">
+    <h2 style="color:var(--text-hi); margin-top:0;">Sunucu Davetleri</h2>
+    @{
+        var serverInvites = ViewBag.ServerInvites as List<DiscordApp.WebUI.Models.PendingServerInvitationViewModel>;
+    }
+    @if (serverInvites == null || !serverInvites.Any())
+    {
+        <p style="color:var(--text-mut); font-size:13px;">Bekleyen sunucu daveti yok.</p>
+    }
+    else
+    {
+        foreach (var inv in serverInvites)
+        {
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:10px; border-bottom:1px solid var(--border);" data-invid="@inv.InvitationId">
+                <span style="color:var(--text-hi);">
+                    <b>@inv.SenderUserName</b> seni <b>@inv.ServerName</b> sunucusuna davet etti
+                </span>
+                <div style="display:flex; gap:8px;">
+                    <button style="background:var(--mint); border:none; padding:6px 14px; border-radius:6px; cursor:pointer; font-weight:600;" onclick="respondServerInvite(@inv.InvitationId, 1, this)">Kabul Et</button>
+                    <button style="background:transparent; border:1px solid var(--border); color:var(--text-mut); padding:6px 14px; border-radius:6px; cursor:pointer;" onclick="respondServerInvite(@inv.InvitationId, 0, this)">Reddet</button>
+                </div>
+            </div>
+        }
+    }
+</div>
 
 @section Scripts {
     <script>
@@ -41,5 +66,20 @@
                 alert(data.message || 'Bir hata oluştu.');
             }
         }
+        async function respondServerInvite(invitationId, isAccepted, btn) {
+            const row = btn.closest('div[data-invid]');
+            const response = await fetch('/Friend/RespondServerInvite', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ invitationId, isAccepted })
+            });
+            const data = await response.json();
+            if (data.success) {
+                row.remove();
+            } else {
+                alert(data.message || 'Bir hata oluştu.');
+            }
+        }
     </script>
+
 }

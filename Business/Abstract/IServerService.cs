@@ -16,5 +16,11 @@ namespace Business.Abstract
         Task<bool> DeleteChannelAsync(int channelId, string userId);
         Task<bool> RenameChannelAsync(int channelId, string newName, string userId);
         /*/
+
+        Task<string> GetInviteLinkAsync(int serverId, string userId);
+        Task<JoinByInviteResultDto> JoinByInviteCodeAsync(string inviteCode, string userId);
+        Task<bool> SendServerInvitationAsync(SendServerInvitationDto dto, string senderUserId);
+        Task<bool> RespondServerInvitationAsync(ServerInvitationActionDto dto, string receiverUserId);
+        Task<List<PendingServerInvitationDto>> GetPendingServerInvitationsAsync(string userId);
     }
 }
