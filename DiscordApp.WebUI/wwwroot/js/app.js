@@ -7,8 +7,7 @@ let currentServerId = null;
 let currentThread = "";
 let currentView = "dm"; // 'dm' ya da 'server'
 let currentDMFriendId = null;
-// Kanal mesajlaşması henüz gerçek API'ye bağlı değil, o yüzden şimdilik kanal başına boş bir mock depo tutuyoruz.
-let channelMessageStore = {};
+let currentChannelId = null;
 
 function showPage(name) {
     document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
@@ -52,8 +51,10 @@ function switchRailView(view, el) {
         renderDMList();
     }
     else {
+
         const serverId = parseInt(el.getAttribute('data-server-id'), 10);
         currentServerId = serverId;
+        currentView = 'server';
 
         document.getElementById('sidebar-server').classList.remove('hidden');
         document.getElementById('sidebar-dms').classList.add('hidden');
@@ -83,6 +84,7 @@ function renderChannels(server) {
         empty.className = 'section-label';
         empty.textContent = 'Henüz kanal yok';
         list.appendChild(empty);
+        document.getElementById('messages').innerHTML = '<p class="msg-system"><span>▸</span>Bu sunucuda henüz kanal yok.</p>';
         return;
     }
 
@@ -90,16 +92,11 @@ function renderChannels(server) {
         const btn = document.createElement('button');
         btn.className = 'chan-btn' + (index === 0 ? ' active' : '');
         btn.innerHTML = '<span class="icon">#</span>' + escapeHtml(ch.name);
-        btn.onclick = () => selectChannel(btn, ch.name);
+        btn.onclick = () => selectChannel(btn, ch);
         list.appendChild(btn);
     });
 
-    // İlk kanalı otomatik seç
-    currentThread = channels[0].name;
-    document.getElementById('chanIcon').textContent = '#';
-    document.getElementById('chanTitle').textContent = channels[0].name;
-    if (!channelMessageStore[currentThread]) channelMessageStore[currentThread] = [];
-    renderMessages();
+    selectChannel(list.querySelector('.chan-btn'), channels[0]);
 }
 
 async function loadMembers(serverId) {
@@ -134,14 +131,36 @@ function escapeHtml(str) {
     return d.innerHTML;
 }
 
-function selectChannel(el, name) {
+async function selectChannel(el, channel) {
     document.querySelectorAll('#sidebar-server .chan-btn').forEach(b => b.classList.remove('active'));
     el.classList.add('active');
-    currentThread = name;
+
+    if (currentChannelId !== null && currentChannelId !== channel.id) {
+        leaveChannelGroup(currentChannelId);
+    }
+
+    currentThread = channel.name;
+    currentChannelId = channel.id;
     document.getElementById('chanIcon').textContent = '#';
-    document.getElementById('chanTitle').textContent = name;
-    if (!channelMessageStore[currentThread]) channelMessageStore[currentThread] = [];
-    renderMessages();
+    document.getElementById('chanTitle').textContent = channel.name;
+
+    joinChannelGroup(channel.id);
+    await loadChannelMessages(channel.id);
+}
+
+async function loadChannelMessages(channelId) {
+    const box = document.getElementById('messages');
+    box.innerHTML = '<p class="msg-system"><span>▸</span>Yükleniyor...</p>';
+
+    try {
+        const response = await fetch(`/Home/GetChannelMessages?channelId=${channelId}`);
+        if (!response.ok) throw new Error('Mesajlar alınamadı');
+        const messages = await response.json();
+        renderRealMessages(messages);
+    } catch (err) {
+        console.error(err);
+        box.innerHTML = '<p class="msg-system"><span>▸</span>Mesajlar yüklenemedi.</p>';
+    }
 }
 
 function renderDMList() {
@@ -237,30 +256,6 @@ function goVoice(roomName) {
     showPage('voice');
 }
 
-function renderMessages() {
-    const box = document.getElementById('messages');
-    if (!box) return;
-    box.innerHTML = '';
-    (channelMessageStore[currentThread] || []).forEach(m => {
-        if (m.system) {
-            const d = document.createElement('div');
-            d.className = 'msg-system';
-            d.innerHTML = '<span>▸</span>' + m.text;
-            box.appendChild(d);
-        } else {
-            const d = document.createElement('div');
-            d.className = 'msg';
-            d.innerHTML = `<div class="msg-avatar">${initials(m.author)}</div>
-        <div class="msg-body">
-          <div class="msg-meta"><span class="msg-author">${m.author}</span><span class="msg-time">${m.time}</span></div>
-          <p>${m.text}</p>
-        </div>`;
-            box.appendChild(d);
-        }
-    });
-    box.scrollTop = box.scrollHeight;
-}
-
 function initials(str) {
     if (!str) return "?";
     let parts = str.split(' ').filter(w => w.length > 0);
@@ -289,12 +284,10 @@ async function sendMessage() {
     if (!val) return;
 
     if (currentView === 'dm' && currentDMFriendId) {
-        input.value = ''; // önce inputu temizle, kullanıcı beklemesin
-
+        input.value = '';
         const res = await callApi('/Home/SendMessage', 'POST', { receiverId: currentDMFriendId, content: val });
 
         if (res.success) {
-            // Sunucuya gidip gelmeden, kendi mesajını anında ekrana bas
             appendSingleMessage({
                 senderId: window.CURRENT_USER_ID,
                 senderUserName: window.CURRENT_USER,
@@ -302,11 +295,26 @@ async function sendMessage() {
                 sentAt: new Date().toISOString()
             });
         } else {
-            input.value = val; // başarısızsa yazdığını geri koy
+            input.value = val;
+            alert(res.message || 'Mesaj gönderilemedi.');
+        }
+    } else if (currentView === 'server' && currentChannelId) {
+        input.value = '';
+        const res = await callApi('/Home/SendChannelMessage', 'POST', { channelId: currentChannelId, content: val });
+
+        if (res.success) {
+            appendSingleMessage({
+                senderId: window.CURRENT_USER_ID,
+                senderUserName: window.CURRENT_USER,
+                content: val,
+                sentAt: new Date().toISOString()
+            });
+        } else {
+            input.value = val;
             alert(res.message || 'Mesaj gönderilemedi.');
         }
     } else {
-        alert('Kanal mesajlaşması henüz aktif değil, bir sonraki adımda ekleyeceğiz.');
+        alert('Önce bir kanal ya da arkadaş seç.');
     }
 }
 
@@ -331,7 +339,6 @@ function updateLocalUserProfile() {
 // SUNUCU EKLEME POPUP (MODAL) İŞLEMLERİ
 document.addEventListener('DOMContentLoaded', () => {
     updateLocalUserProfile(); // Kullanıcı adını sol altta güncelle
-    renderMessages();
     renderDMList(); // Varsayılan görünüm DM olduğu için arkadaş listesini hemen doldur
 
     // '+' butonunu bul ve Model açma olayını bağla

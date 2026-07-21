@@ -10,6 +10,12 @@ namespace Business.Dtos
         public string Content { get; set; } = string.Empty;
     }
 
+    public class SendChannelMessageDto
+    {
+        public int ChannelId { get; set; }
+        public string Content { get; set; } = string.Empty;
+    }
+
     public class MessageDto
     {
         public int MessageId { get; set; }
@@ -17,5 +23,6 @@ namespace Business.Dtos
         public string SenderUserName { get; set; } = string.Empty;
         public string Content { get; set; } = string.Empty;
         public DateTime SentAt { get; set; }
+        public int? ChannelId { get; set; }
     }
 }

@@ -22,5 +22,7 @@ namespace Business.Abstract
         Task<bool> SendServerInvitationAsync(SendServerInvitationDto dto, string senderUserId);
         Task<bool> RespondServerInvitationAsync(ServerInvitationActionDto dto, string receiverUserId);
         Task<List<PendingServerInvitationDto>> GetPendingServerInvitationsAsync(string userId);
+        Task<bool> IsMemberAsync(int serverId, int userId);
+        Task<bool> IsChannelMemberAsync(int channelId, int userId);
     }
 }

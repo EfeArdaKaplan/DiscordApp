@@ -6,5 +6,8 @@ namespace DiscordApp.WebUI.Abstract
     {
         Task<bool> SendMessageAsync(int receiverId, string content);
         Task<List<MessageViewModel>> GetConversationAsync(int otherUserId);
+
+        Task<bool> SendChannelMessageAsync(int channelId, string content);
+        Task<List<MessageViewModel>> GetChannelMessagesAsync(int channelId);
     }
 }

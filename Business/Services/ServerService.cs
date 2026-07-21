@@ -140,11 +140,18 @@ namespace Business.Services
             return int.TryParse(userId, out int id) ? id : null;
         }
 
-        private async Task<bool> IsMemberAsync(int serverId, int userId)
+        public async Task<bool> IsMemberAsync(int serverId, int userId)
         {
             return await _context.UserServers.AnyAsync(us => us.ServerId == serverId && us.UserId == userId);
         }
 
+        public async Task<bool> IsChannelMemberAsync(int channelId, int userId)
+        {
+            var channel = await _context.Channels.FirstOrDefaultAsync(c => c.Id == channelId);
+            if (channel == null) return false;
+
+            return await IsMemberAsync(channel.ServerId, userId);
+        }
         private async Task AddMemberIfNotExistsAsync(int serverId, int userId)
         {
             if (!await IsMemberAsync(serverId, userId))

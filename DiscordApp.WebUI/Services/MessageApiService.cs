@@ -45,5 +45,19 @@ namespace DiscordApp.WebUI.Services
 
             return await response.Content.ReadFromJsonAsync<List<MessageViewModel>>() ?? new();
         }
+
+        public async Task<bool> SendChannelMessageAsync(int channelId, string content)
+        {
+            var response = await SendAsync(HttpMethod.Post, "api/Message/SendChannel", new { ChannelId = channelId, Content = content });
+            return response?.IsSuccessStatusCode ?? false;
+        }
+
+        public async Task<List<MessageViewModel>> GetChannelMessagesAsync(int channelId)
+        {
+            var response = await SendAsync(HttpMethod.Get, $"api/Message/ChannelMessages/{channelId}");
+            if (response == null || !response.IsSuccessStatusCode) return new();
+
+            return await response.Content.ReadFromJsonAsync<List<MessageViewModel>>() ?? new();
+        }
     }
 }

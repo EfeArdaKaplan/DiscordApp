@@ -8,5 +8,6 @@ namespace Business.Abstract
     public interface IMessageNotifier
     {
         Task NotifyNewMessageAsync(int receiverId, MessageDto message);
+        Task NotifyNewChannelMessageAsync(int channelId, MessageDto message);
     }
 }

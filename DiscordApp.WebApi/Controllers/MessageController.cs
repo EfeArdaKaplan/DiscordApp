@@ -46,5 +46,29 @@ namespace DiscordApp.WebApi.Controllers
             var messages = await _messageService.GetConversationAsync(int.Parse(userId), otherUserId);
             return Ok(messages);
         }
+
+        [HttpPost("SendChannel")]
+        public async Task<IActionResult> SendChannel([FromBody] SendChannelMessageDto dto)
+        {
+            var userId = GetUserId();
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var result = await _messageService.SendChannelMessageAsync(int.Parse(userId), dto.ChannelId, dto.Content);
+            if (result) return Ok(new { success = true });
+
+            return BadRequest(new { success = false, message = "Mesaj gönderilemedi (bu sunucunun üyesi değilsin ya da mesaj boş!" });
+        }
+
+        [HttpGet("ChannelMessages/{channelId}")]
+        public async Task<IActionResult> GetChannelMessages(int channelId)
+        {
+            var userId = GetUserId();
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var messages = await _messageService.GetChannelMessagesAsync(channelId, int.Parse(userId));
+            if (messages == null) return Forbid();
+
+            return Ok(messages);
+        }
     }
 }

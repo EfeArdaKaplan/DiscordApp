@@ -122,6 +122,30 @@ namespace DiscordApp.WebUI.Controllers
             return BadRequest(new { success = false, message = "Mesaj gönderilemedi!" });
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetChannelMessages(int channelId)
+        {
+            var messages = await _messageApiService.GetChannelMessagesAsync(channelId);
+            return Ok(messages);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SendChannelMessage([FromBody] SendChannelMessageRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request?.Content))
+                return BadRequest(new { succcess = false, message = "Mesaj boş olamaz!" });
+
+            var result = await _messageApiService.SendChannelMessageAsync(request.ChannelId, request.Content);
+            if (result) return Ok(new { success = true });
+
+            return BadRequest(new { success = false, message = "Mesaj gönderilemedi!" });
+        }
+
+        public class SendChannelMessageRequest
+        {
+            public int ChannelId { get; set; }
+            public string Content { get; set; } = string.Empty;
+        }
         public class SendMessageRequest
         {
             public int ReceiverId { get; set; }

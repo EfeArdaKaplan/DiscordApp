@@ -19,5 +19,11 @@ namespace DiscordApp.WebApi.Notifications
             await _hubContext.Clients.Group(receiverId.ToString())
                 .SendAsync("receiveMessage", message);
         }
+
+        public async Task NotifyNewChannelMessageAsync(int channelId, MessageDto message)
+        {
+            await _hubContext.Clients.Group($"channel-{channelId}")
+                .SendAsync("ReceiveChannelMessage", message);
+        }
     }
 }
