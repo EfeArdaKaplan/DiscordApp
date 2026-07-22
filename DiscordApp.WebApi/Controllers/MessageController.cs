@@ -2,6 +2,7 @@
 using Business.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
@@ -13,10 +14,12 @@ namespace DiscordApp.WebApi.Controllers
     public class MessageController : ControllerBase
     {
         private readonly IMessageService _messageService;
+        private readonly IWebHostEnvironment _env;
 
-        public MessageController(IMessageService messageService)
+        public MessageController(IMessageService messageService, IWebHostEnvironment webHostEnvironment)
         {
             _messageService = messageService;
+            _env = webHostEnvironment;
         }
 
         private string? GetUserId()
@@ -69,6 +72,42 @@ namespace DiscordApp.WebApi.Controllers
             if (messages == null) return Forbid();
 
             return Ok(messages);
+        }
+
+        [HttpPost("SendVoice")]
+        [RequestSizeLimit(5_000_000)] // 5mb tavan ses dosyası sınırı koyyuok
+        public async Task<IActionResult> SendVoice([FromForm] SendVoiceRequest request)
+        {
+            var userId = GetUserId();
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            if (request.Audio == null || request.Audio.Length == 0) 
+                return BadRequest(new { success = false, message = "ses kaydı boş" });
+
+            var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "voice");
+            Directory.CreateDirectory(uploadsFolder);
+
+            var fileName = $"{Guid.NewGuid()}.webm";
+            var filePath = Path.Combine(uploadsFolder, fileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await request.Audio.CopyToAsync(stream);
+            }
+
+            var audioUrl = $"/uploads/voice/{fileName}";
+
+            var dto = await _messageService.SendVoiceDirectMessageAsync(int.Parse(userId), request.ReceiverId, audioUrl, request.DurationSeconds);
+            if (dto == null) return BadRequest(new { success = false, message = "mesaj gönderilemedi" });
+
+            return Ok(new { success = true, message = dto });
+        }
+
+        public class SendVoiceRequest
+        {
+            public int ReceiverId { get; set; }
+            public int DurationSeconds { get; set; }
+            public IFormFile Audio { get; set; } = null;
         }
     }
 }

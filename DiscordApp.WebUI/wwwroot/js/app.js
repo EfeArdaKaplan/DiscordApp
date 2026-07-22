@@ -8,6 +8,90 @@ let currentThread = "";
 let currentView = "dm"; // 'dm' ya da 'server'
 let currentDMFriendId = null;
 let currentChannelId = null;
+let mediaRecorder = null;
+let audioChunks = [];
+let recordingStartTime = null;
+let recordingStream = null;
+
+function buildMessageBodyHtml(m) {
+    if (m.type === 'Voice') {
+        const apiBase = window.HUB_URL.replace('/hubs/chat', '');
+        return `<audio controls src="${apiBase}${m.audioUrl}" style="height:32px; max-width:220px; margin-top:2px;"></audio>`;
+    }
+    return `<p>${escapeHtml(m.content)}</p>`;
+}
+
+// voice işlemleri
+
+async function toggleVoiceRecording() {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+        stopVoiceRecording();
+        return;
+    }
+    if (currentView !== 'dm' || !currentDMFriendId) {
+        alert('Şu an sadece DM\'lerde sesli mesaj gönderebilirsin.');
+        return;
+    }
+
+    try {
+        recordingStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (err) {
+        alert('Mikrofona erişilemedi. Tarayıcı izinlerini kontrol et.');
+        return;
+    }
+
+    audioChunks = [];
+    mediaRecorder = new MediaRecorder(recordingStream, { mimeType: 'audio/webm;codecs=opus' });
+    mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunks.push(e.data); };
+    mediaRecorder.onstop = onRecordingStopped;
+
+    recordingStartTime = Date.now();
+    mediaRecorder.start();
+
+    const btn = document.getElementById('voiceBtn');
+    btn.textContent = '⏹';
+    btn.style.color = '#E5484D';
+}
+
+function stopVoiceRecording() {
+    if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
+    if (recordingStream) recordingStream.getTracks().forEach(t => t.stop());
+
+    const btn = document.getElementById('voiceBtn');
+    btn.textContent = '🎤';
+    btn.style.color = 'var(--text-mut)';
+}
+
+async function onRecordingStopped() {
+    const durationSeconds = Math.round((Date.now() - recordingStartTime) / 1000);
+    if (durationSeconds < 1) return; // yanlışlıkla tıklanmış çok kısa kayıtları at
+
+    const blob = new Blob(audioChunks, { type: 'audio/webm' });
+    console.log('blob boyutu:', blob.size, 'chunk say�s�:', audioChunks.length);
+    const formData = new FormData();
+    formData.append('ReceiverId', currentDMFriendId);
+    formData.append('DurationSeconds', durationSeconds);
+    formData.append('Audio', blob, 'voice.webm');
+
+    const apiBase = window.HUB_URL.replace('/hubs/chat', '');
+
+    try {
+        const response = await fetch(`${apiBase}/api/Message/SendVoice`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${window.JWT_TOKEN}` },
+            body: formData
+        });
+        const data = await response.json();
+        if (data.success) {
+            appendSingleMessage(data.message);
+        } else {
+            alert(data.message || 'Sesli mesaj gönderilemedi.');
+        }
+    } catch (err) {
+        console.error(err);
+        alert('Sesli mesaj gönderilirken bağlantı hatası oluştu.');
+    }
+}
 
 function showPage(name) {
     document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
@@ -208,7 +292,7 @@ function appendSingleMessage(m) {
     d.innerHTML = `<div class="msg-avatar">${initials(m.senderUserName)}</div>
       <div class="msg-body">
         <div class="msg-meta"><span class="msg-author">${escapeHtml(m.senderUserName)}</span><span class="msg-time">${time}</span></div>
-        <p>${escapeHtml(m.content)}</p>
+        ${buildMessageBodyHtml(m)}
       </div>`;
     box.appendChild(d);
     box.scrollTop = box.scrollHeight;
@@ -230,7 +314,7 @@ function renderRealMessages(messages) {
         d.innerHTML = `<div class="msg-avatar">${initials(m.senderUserName)}</div>
       <div class="msg-body">
         <div class="msg-meta"><span class="msg-author">${escapeHtml(m.senderUserName)}</span><span class="msg-time">${time}</span></div>
-        <p>${escapeHtml(m.content)}</p>
+        ${buildMessageBodyHtml(m)}
       </div>`;
         box.appendChild(d);
     });
@@ -454,14 +538,8 @@ async function submitNewChannel() {
     const input = document.getElementById("newChannelNameInput");
     const channelName = input ? input.value.trim() : "";
 
-    if (!channelName) {
-        alert("Lütfen bir kanal adı girin!");
-        return;
-    }
-    if (!currentServerId) {
-        alert("Önce bir sunucu seç!");
-        return;
-    }
+    if (!channelName) { alert("Lütfen bir kanal adı girin!"); return; }
+    if (!currentServerId) { alert("Önce bir sunucu seç!"); return; }
 
     try {
         const response = await fetch('/Home/CreateChannel', {
@@ -469,18 +547,11 @@ async function submitNewChannel() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ serverId: currentServerId, name: channelName })
         });
-
         const resData = await response.json();
 
-        if(resData.success) {
+        if (resData.success) {
             closeChannelModal();
-
-            const currentServer = serversData.find(s => s.id === currentServerId);
-            if (currentServer) {
-                if (!currentServer.channels) currentServer.channels = [];
-                currentServer.channels.push(resData.channel); // gerçek id burada
-                renderChannels(currentServer);
-            }
+            // Listeye ekleme artık "ChannelCreated" SignalR event'inin işi.
         } else {
             alert(resData.message || "Kanal oluşturulurken bir hata oluştu.");
         }

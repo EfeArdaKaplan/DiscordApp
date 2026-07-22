@@ -16,11 +16,13 @@ namespace Business.Services
     {
         private readonly ApiContext _context;
         private readonly IMapper _mapper;
+        private readonly IServerNotifier _serverNotifier;
 
-        public ServerService(ApiContext context, IMapper mapper)
+        public ServerService(ApiContext context, IMapper mapper, IServerNotifier serverNotifier)
         {
             _context = context;
             _mapper = mapper;
+            _serverNotifier = serverNotifier;
         }
 
         public async Task<List<ServerDto>> GetUserServersAsync(string userId)
@@ -81,7 +83,14 @@ namespace Business.Services
             _context.Channels.Add(channel);
             await _context.SaveChangesAsync();
 
-            return _mapper.Map<ChannelDto>(channel); ;
+            var channelDto =  _mapper.Map<ChannelDto>(channel); 
+
+            var memberIds = await _context.UserServers
+                .Where(us => us.ServerId == serverId)
+                .Select(us => us.UserId)
+                .ToListAsync();
+            await _serverNotifier.NotifyChannelCreatedAsync(memberIds, channelDto);
+            return channelDto;
         }
 
         public async Task<List<MemberDto>> GetServerMembersAsync(int serverId, string requestingUserId)

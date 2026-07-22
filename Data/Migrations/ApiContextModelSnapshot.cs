@@ -159,6 +159,12 @@ namespace Data.Migrations
                     b.Property<int?>("AppUserId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("AudioDurationSeconds")
+                        .HasColumnType("int");
+
+                    b.Property<string>("AudioUrl")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int?>("ChannelId")
                         .HasColumnType("int");
 
@@ -174,6 +180,9 @@ namespace Data.Migrations
 
                     b.Property<DateTime>("SentAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
 
                     b.HasKey("MessageId");
 

@@ -57,6 +57,36 @@ namespace Business.Services
             await _messageNotifier.NotifyNewMessageAsync(receiverId, dto);
             return true;
         }
+        public async Task<MessageDto?> SendVoiceDirectMessageAsync(int senderId, int receiverId, string audioUrl, int durationSeconds)
+        {
+            if (senderId == receiverId) return null;
+
+            bool areFriends = await _context.FriendShips.AnyAsync(f =>
+                f.Status == FriendShipStatus.Accepted &&
+                ((f.SenderId == senderId && f.ReceiverId == receiverId) ||
+                 (f.SenderId == receiverId && f.ReceiverId == senderId)));
+            if (!areFriends) return null;
+
+            var message = new Message
+            {
+                SenderId = senderId,
+                ReceiverId = receiverId,
+                Content = string.Empty,
+                Type = MessageType.Voice,
+                AudioUrl = audioUrl,
+                AudioDurationSeconds = durationSeconds
+            };
+
+            _context.Messages.Add(message);
+            await _context.SaveChangesAsync();
+
+            await _context.Entry(message).Reference(m => m.Sender).LoadAsync();
+
+            var dto = _mapper.Map<MessageDto>(message);
+            await _messageNotifier.NotifyNewMessageAsync(receiverId, dto);
+
+            return dto;
+        }
         public async Task<List<MessageDto>> GetConversationAsync(int userId, int otherUserId)
         {
             return await _context.Messages

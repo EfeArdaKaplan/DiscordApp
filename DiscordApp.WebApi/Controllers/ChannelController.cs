@@ -18,13 +18,15 @@ namespace DiscordApp.WebApi.Controllers
         {
             _serverService = serverService;
         }
+        private string? GetUserId()
+        {
+            return User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.NameIdentifier || c.Type == "id" || c.Type == "UserId" || c.Type == "sub")?.Value;
+        }
 
         [HttpPost("Create")]
         public async Task<IActionResult> Create([FromBody] CreateChannelDto dto)
         {
-            var userId = User.Claims.FirstOrDefault(c =>
-                c.Type == ClaimTypes.NameIdentifier || c.Type == "id" || c.Type == "UserId" || c.Type == "sub")?.Value;
-
+            var userId = GetUserId();
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized(new { message = "Token var ama içinden ID okunamadı!" });
 
@@ -32,7 +34,7 @@ namespace DiscordApp.WebApi.Controllers
             if (channel != null)
                 return Ok(new { success = true, channel });
 
-            return BadRequest(new { success = false, message = "Kanal oluşturulamadı! (Sunucu üyesi olmayabilirsin ya da isim boş olabilir)" });
+            return BadRequest(new { success = false, message = "Kanal oluşturulamadı!" });
         }
     }
 

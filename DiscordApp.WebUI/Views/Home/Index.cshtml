@@ -94,15 +94,14 @@
         <div class="right"><span>🔍</span><span>👥</span></div>
       </div>
       <div id="messages" class="messages"></div>
-      <div class="composer">
-        <div class="composer-inner">
-          <span class="icon">📎</span>
-          <input id="draftInput" placeholder="Mesaj yaz" onkeydown="if(event.key==='Enter')sendMessage()" />
-          <span class="icon"></span>
-          <span class="icon">🙂</span>
-          <button class="send" onclick="sendMessage()">➤</button>
-        </div>
-      </div>
+      <div class="composer-inner">
+        <span class="icon">📎</span>
+        <input id="draftInput" placeholder="Mesaj yaz" onkeydown="if(event.key==='Enter')sendMessage()" />
+        <span class="icon"></span>
+        <span class="icon">🙂</span>
+        <button class="icon-btn" id="voiceBtn" onclick="toggleVoiceRecording()" title="Sesli mesaj" style="color:var(--text-mut)">🎤</button>
+        <button class="send" onclick="sendMessage()">➤</button>
+</div>
     </div>
 
     <!-- members (server view only) -->

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Core.Enums;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -16,5 +17,9 @@ namespace Core.Entities
 
         public int? ChannelId { get; set; }
         public Channel Channel { get; set; }
+
+        public MessageType Type { get; set; } = MessageType.Text;
+        public string? AudioUrl { get; set; }
+        public int? AudioDurationSeconds { get; set; }
     }
 }

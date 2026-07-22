@@ -93,13 +93,13 @@ namespace DiscordApp.WebUI.Controllers
         public async Task<IActionResult> CreateChannel([FromBody] CreateChannelRequest request)
         {
             if (string.IsNullOrWhiteSpace(request?.Name))
-                return BadRequest(new { success = false, message = "Kanal adı boş olamaz!" });
+                return Json(new { success = false, message = "Kanal adı boş olamaz!" });
 
             var channel = await _channelApiService.CreateChannelAsync(request.ServerId, request.Name);
             if (channel != null)
-                return Ok(new { success = true, channel });
+                return Json(new { success = true, channel });
 
-            return BadRequest(new { success = false, message = "Kanal oluşturulamadı!" });
+            return Json(new { success = false, message = "Kanal oluşturulamadı!" });
         }
 
         [HttpGet]

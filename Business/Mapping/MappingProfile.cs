@@ -19,7 +19,8 @@ namespace Business.Mapping
                 .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.User.UserName))
                 .ForMember(dest => dest.IsOwner, opt => opt.MapFrom(src => src.UserId == src.Server.OwnerId));
             CreateMap<Message, MessageDto>()
-                .ForMember(dest => dest.SenderUserName, opt => opt.MapFrom(src => src.Sender.UserName));
+                .ForMember(dest => dest.SenderUserName, opt => opt.MapFrom(src => src.Sender.UserName))
+                .ForMember(dest => dest.Type, opt => opt.MapFrom(src=> src.Type.ToString()));
 
             CreateMap<AppUser, UserSummaryDto>();
 

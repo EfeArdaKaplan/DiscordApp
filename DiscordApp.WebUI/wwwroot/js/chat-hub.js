@@ -28,6 +28,19 @@ function startHubConnection() {
             markDMAsUnread(message.senderId);
         }
     });
+    hubConnection.on("ChannelCreated", (channel) => {
+        const server = serversData.find(s => s.id === channel.serverId);
+        if (!server) return;
+
+        if (!server.channels) server.channels = [];
+        if (server.channels.some(c => c.id === channel.id)) return;
+
+        server.channels.push(channel);
+
+        if (currentView === 'server' && currentServerId === channel.serverId) {
+            renderChannels(server);
+        }
+    });
 
     hubConnection.on("ReceiveChannelMessage", (message) => {
         // message: { messageId, senderId, senderUserName, content, sentAt, channelId }
@@ -87,3 +100,4 @@ function leaveChannelGroup(channelId) {
 document.addEventListener('DOMContentLoaded', () => {
     startHubConnection();
 });
+

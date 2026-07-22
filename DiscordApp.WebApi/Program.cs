@@ -23,6 +23,12 @@ builder.Services.AddScoped<IServerService, ServerService>(); //
 builder.Services.AddScoped<IMessageService, MessageService>();
 builder.Services.AddAutoMapper(cfg => { }, typeof(MappingProfile));
 builder.Services.AddScoped<IMessageNotifier, SignalRMessageNotifier>();
+builder.Services.AddScoped<IServerNotifier, SignalRServerNotifier>();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+    });
 // JWT Ayarları
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var secretKey = Encoding.UTF8.GetBytes(jwtSettings["Key"]!);
@@ -98,6 +104,14 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<RegisterDtoValidator>();
 
+var wwwrootPath = Path.Combine(builder.Environment.ContentRootPath, "wwwroot");
+if (!Directory.Exists(wwwrootPath))
+    Directory.CreateDirectory(wwwrootPath);
+
+var voicePath = Path.Combine(wwwrootPath, "uploads", "voice");
+if (!Directory.Exists(voicePath))
+    Directory.CreateDirectory(voicePath);
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -107,7 +121,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
+app.UseStaticFiles();
 
 app.UseRouting();
 app.UseCors("AllowAll");
