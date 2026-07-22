@@ -8,7 +8,7 @@ namespace Business.Abstract
     {
         Task<List<ServerDto>> GetUserServersAsync(string userId);
         Task<bool> CreateServerAsync(string serverName, string userId);
-        Task<bool> CreateChannelAsync(int serverId, string channelName, string userId);
+        Task<ChannelDto?> CreateChannelAsync(int serverId, string channelName, string userId);
         Task<List<MemberDto>> GetServerMembersAsync(int serverId, string requestingUserId);
         /*
         Task<bool> DeleteServerAsync(int serverId, string userId);

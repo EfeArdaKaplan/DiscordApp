@@ -44,7 +44,10 @@ namespace DiscordApp.WebApi.Controllers
         [HttpPost("respond-request")]
         public IActionResult respondRequest([FromBody] FriendRequestActionDto dto)
         {
-            var result = _friendshipService.RespondToRequest(dto);
+            var userId = GetUserID();
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var result = _friendshipService.RespondToRequest(dto, int.Parse(userId));
             if (!result) return BadRequest("İstek bulunamadı veya işlem başarısız.");
 
             return Ok("Yanıtınız kaydedildi.");

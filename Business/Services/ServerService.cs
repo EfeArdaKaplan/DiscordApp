@@ -68,30 +68,20 @@ namespace Business.Services
             return true;
         }
 
-        public async Task<bool> CreateChannelAsync(int serverId, string channelName, string userId)
+        public async Task<ChannelDto?> CreateChannelAsync(int serverId, string channelName, string userId)
         {
-            if (!int.TryParse(userId, out int parsedUserId))
-                return false;
+            if (!int.TryParse(userId, out int parsedUserId)) return null;
+            if (string.IsNullOrWhiteSpace(channelName)) return null;
 
-            if (string.IsNullOrWhiteSpace(channelName))
-                return false;
-
-            // Kullanıcı gerçekten bu sunucunun üyesi mi? Değilse kanal ekleyemesin.
             bool isMember = await _context.UserServers
                 .AnyAsync(us => us.ServerId == serverId && us.UserId == parsedUserId);
+            if (!isMember) return null;
 
-            if (!isMember)
-                return false;
-
-            var channel = new Channel
-            {
-                Name = channelName.Trim(),
-                ServerId = serverId
-            };
-
+            var channel = new Channel { Name = channelName.Trim(), ServerId = serverId };
             _context.Channels.Add(channel);
             await _context.SaveChangesAsync();
-            return true;
+
+            return _mapper.Map<ChannelDto>(channel); ;
         }
 
         public async Task<List<MemberDto>> GetServerMembersAsync(int serverId, string requestingUserId)

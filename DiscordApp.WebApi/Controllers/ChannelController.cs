@@ -23,17 +23,14 @@ namespace DiscordApp.WebApi.Controllers
         public async Task<IActionResult> Create([FromBody] CreateChannelDto dto)
         {
             var userId = User.Claims.FirstOrDefault(c =>
-                c.Type == ClaimTypes.NameIdentifier ||
-                c.Type == "id" ||
-                c.Type == "UserId" ||
-                c.Type == "sub")?.Value;
+                c.Type == ClaimTypes.NameIdentifier || c.Type == "id" || c.Type == "UserId" || c.Type == "sub")?.Value;
 
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized(new { message = "Token var ama içinden ID okunamadı!" });
 
-            var result = await _serverService.CreateChannelAsync(dto.ServerId, dto.Name, userId);
-            if (result)
-                return Ok(new { success = true });
+            var channel = await _serverService.CreateChannelAsync(dto.ServerId, dto.Name, userId);
+            if (channel != null)
+                return Ok(new { success = true, channel });
 
             return BadRequest(new { success = false, message = "Kanal oluşturulamadı! (Sunucu üyesi olmayabilirsin ya da isim boş olabilir)" });
         }

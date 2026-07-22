@@ -95,10 +95,9 @@ namespace DiscordApp.WebUI.Controllers
             if (string.IsNullOrWhiteSpace(request?.Name))
                 return BadRequest(new { success = false, message = "Kanal adı boş olamaz!" });
 
-            var result = await _channelApiService.CreateChannelAsync(request.ServerId, request.Name);
-
-            if (result)
-                return Ok(new { success = true });
+            var channel = await _channelApiService.CreateChannelAsync(request.ServerId, request.Name);
+            if (channel != null)
+                return Ok(new { success = true, channel });
 
             return BadRequest(new { success = false, message = "Kanal oluşturulamadı!" });
         }

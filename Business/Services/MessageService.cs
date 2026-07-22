@@ -50,7 +50,9 @@ namespace Business.Services
 
             _context.Messages.Add(message);
             await _context.SaveChangesAsync();
-            
+
+            await _context.Entry(message).Reference(m => m.Sender).LoadAsync();
+
             var dto = _mapper.Map<MessageDto>(message);
             await _messageNotifier.NotifyNewMessageAsync(receiverId, dto);
             return true;
@@ -85,6 +87,8 @@ namespace Business.Services
 
             _context.Messages.Add(message);
             await _context.SaveChangesAsync();
+
+            await _context.Entry(message).Reference(m => m.Sender).LoadAsync();
 
             var dto = _mapper.Map<MessageDto>(message);
             await _messageNotifier.NotifyNewChannelMessageAsync(channelId, dto);

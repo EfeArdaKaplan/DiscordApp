@@ -14,19 +14,6 @@ function showPage(name) {
     document.getElementById('page-' + name).classList.remove('hidden');
 }
 
-// davet kopyalama
-async function copyInviteLink() {
-    if (!currentServerId) { alert('Önce bir sunucu seç.'); return; }
-    const res = await callApi(`/Home/GetInviteLink?serverId=${currentServerId}`);
-    if (res.success) {
-        const link = `${window.location.origin}/invite/${res.inviteCode}`;
-        navigator.clipboard.writeText(link);
-        alert('Davet linki kopyalandı:\n' + link);
-    } else {
-        alert(res.message || 'Davet linki alınamadı.');
-    }
-}
-
 // davet etme
 async function inviteFriendToCurrentServer(receiverId, btn) {
     btn.disabled = true;
@@ -302,22 +289,12 @@ async function sendMessage() {
         input.value = '';
         const res = await callApi('/Home/SendChannelMessage', 'POST', { channelId: currentChannelId, content: val });
 
-        if (res.success) {
-            appendSingleMessage({
-                senderId: window.CURRENT_USER_ID,
-                senderUserName: window.CURRENT_USER,
-                content: val,
-                sentAt: new Date().toISOString()
-            });
-        } else {
+        if (!res.success) {
             input.value = val;
             alert(res.message || 'Mesaj gönderilemedi.');
         }
-    } else {
-        alert('Önce bir kanal ya da arkadaş seç.');
     }
 }
-
 function pickTheme(el) {
     document.querySelectorAll('.theme-pills .pill').forEach(p => p.classList.remove('active'));
     el.classList.add('active');
@@ -495,18 +472,13 @@ async function submitNewChannel() {
 
         const resData = await response.json();
 
-        if (resData.success) {
+        if(resData.success) {
             closeChannelModal();
 
-            // Sayfayı yenilemek yerine mevcut sunucu verisine yeni kanalı dinamik ekleyip render alıyoruz
             const currentServer = serversData.find(s => s.id === currentServerId);
             if (currentServer) {
                 if (!currentServer.channels) currentServer.channels = [];
-                currentServer.channels.push({
-                    id: Date.now(), // Geçici dinamik ID
-                    name: channelName,
-                    serverId: currentServerId
-                });
+                currentServer.channels.push(resData.channel); // gerçek id burada
                 renderChannels(currentServer);
             }
         } else {

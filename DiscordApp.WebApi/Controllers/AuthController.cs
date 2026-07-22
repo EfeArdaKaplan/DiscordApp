@@ -61,12 +61,12 @@ namespace DiscordApp.WebApi.Controllers
                 Token = token
             });
         }
-        [HttpGet("users")]
-        public IActionResult GetAllUsers()
-        {
-            var users = _authService.GetAllUsers().Select(u => new { u.Id, u.UserName });
-            return Ok(users);
-        }
+        //[HttpGet("users")]
+        //public IActionResult GetAllUsers()
+        //{
+        //    var users = _authService.GetAllUsers().Select(u => new { u.Id, u.UserName });
+        //    return Ok(users);
+        //}
 
         [HttpGet("search")]
         [Authorize]

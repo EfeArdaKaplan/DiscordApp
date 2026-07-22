@@ -95,10 +95,13 @@ namespace DiscordApp.WebUI.Services
             return await PostSuccessAsync("api/Server/Create", new { Name = serverName });
         }
 
-        public async Task<bool> CreateChannelAsync(int serverId, string channelName)
+        public async Task<ChannelViewModel?> CreateChannelAsync(int serverId, string channelName)
         {
-            return await PostSuccessAsync("api/Channel/Create", new { ServerId = serverId, Name = channelName });
+            var result = await SendAsync<CreateChannelResponse>(HttpMethod.Post, "api/Channel/Create", new { ServerId = serverId, Name = channelName });
+            return result?.Channel;
         }
+
+        private class CreateChannelResponse { public bool Success { get; set; } public ChannelViewModel? Channel { get; set; } }
 
         public async Task<string?> GetInviteLinkAsync(int serverId)
         {

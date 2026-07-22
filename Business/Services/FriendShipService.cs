@@ -46,10 +46,12 @@ namespace Business.Services
         }
 
         // bekleyen isteklers
-        public bool RespondToRequest(FriendRequestActionDto dto)
+        public bool RespondToRequest(FriendRequestActionDto dto, int respondingUserId)
         {
             var request = _context.FriendShips.FirstOrDefault(f => f.FriendShipId == dto.FriendShipId);
             if (request == null) return false;
+            if (request.ReceiverId != respondingUserId) return false;
+            if (request.Status != FriendShipStatus.Pending) return false;
 
             request.Status = dto.IsAccepted == 1 ? FriendShipStatus.Accepted : FriendShipStatus.Rejected;
 
