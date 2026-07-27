@@ -28,15 +28,18 @@ async function toggleVoiceRecording() {
         stopVoiceRecording();
         return;
     }
-    if (currentView !== 'dm' || !currentDMFriendId) {
-        alert('Åžu an sadece DM\'lerde sesli mesaj gÃ¶nderebilirsin.');
+
+    const canSendDM = currentView === 'dm' && currentDMFriendId;
+    const canSendChannel = currentView === 'server' && currentChannelId;
+
+    if (!canSendDM && !canSendChannel) {
+        alert('Sesli mesaj göndermek için bir arkadaþ ya da kanal seçmelisin.');
         return;
     }
-
     try {
         recordingStream = await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch (err) {
-        alert('Mikrofona eriÅŸilemedi. TarayÄ±cÄ± izinlerini kontrol et.');
+        alert('Mikrofona eriþilemedi. Tarayýcý izinlerini kontrol et.');
         return;
     }
 
@@ -64,14 +67,20 @@ function stopVoiceRecording() {
 
 async function onRecordingStopped() {
     const durationSeconds = Math.round((Date.now() - recordingStartTime) / 1000);
-    if (durationSeconds < 1) return; // yanlÄ±ÅŸlÄ±kla tÄ±klanmÄ±ÅŸ Ã§ok kÄ±sa kayÄ±tlarÄ± at
+    if (durationSeconds < 1) return;
 
     const blob = new Blob(audioChunks, { type: 'audio/webm' });
-    console.log('blob boyutu:', blob.size, 'chunk sayýsý:', audioChunks.length);
     const formData = new FormData();
-    formData.append('ReceiverId', currentDMFriendId);
-    formData.append('DurationSeconds', durationSeconds);
     formData.append('Audio', blob, 'voice.webm');
+    formData.append('DurationSeconds', durationSeconds);
+
+    const isChannel = currentView === 'server' && currentChannelId; // <-- BU SATIR EKSÝKTÝ
+
+    if (isChannel) {
+        formData.append('ChannelId', currentChannelId);
+    } else {
+        formData.append('ReceiverId', currentDMFriendId);
+    }
 
     const apiBase = window.HUB_URL.replace('/hubs/chat', '');
 
@@ -83,13 +92,15 @@ async function onRecordingStopped() {
         });
         const data = await response.json();
         if (data.success) {
-            appendSingleMessage(data.message);
+            if (!isChannel) {
+                appendSingleMessage(data.message);
+            }
         } else {
-            alert(data.message || 'Sesli mesaj gÃ¶nderilemedi.');
+            alert(data.message || 'Sesli mesaj gönderilemedi.');
         }
     } catch (err) {
         console.error(err);
-        alert('Sesli mesaj gÃ¶nderilirken baÄŸlantÄ± hatasÄ± oluÅŸtu.');
+        alert('Sesli mesaj gönderilirken baðlantý hatasý oluþtu.');
     }
 }
 

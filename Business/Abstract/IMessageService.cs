@@ -13,5 +13,6 @@ namespace Business.Abstract
         Task<bool> SendChannelMessageAsync(int senderId, int channelId, string content);
         Task<List<MessageDto>?> GetChannelMessagesAsync(int channelId, int requestingUserId);
         Task<MessageDto?> SendVoiceDirectMessageAsync(int senderId, int receiverId, string audioUrl, int durationSeconds);
+        Task<MessageDto?> SendVoiceChannelMessageAsync(int senderId, int channelId, string audioUrl, int durationSeconds);
     }
 }

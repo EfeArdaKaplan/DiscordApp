@@ -138,5 +138,34 @@ namespace Business.Services
                 .ProjectTo<MessageDto>(_mapper.ConfigurationProvider)
                 .ToListAsync();
         }
+
+        public async Task<MessageDto?> SendVoiceChannelMessageAsync(int senderId, int channelId, string audioUrl, int durationSeconds)
+        {
+            var channel = await _context.Channels.FirstOrDefaultAsync(c => c.Id == channelId);
+            if (channelId ==null) return null;
+            
+            if(!await _serverService.IsMemberAsync(channel.ServerId, senderId)) return null;
+
+            var message = new Message
+            {
+                SenderId = senderId,
+                ChannelId = channelId,
+                Content = string.Empty,
+                Type = MessageType.Voice,
+                AudioUrl = audioUrl,
+                AudioDurationSeconds = durationSeconds,
+                SentAt = DateTime.UtcNow,
+            };
+
+            _context.Messages .Add(message);
+            await _context.SaveChangesAsync();
+
+            await _context.Entry(message).Reference(m => m.Sender).LoadAsync();
+
+            var dto = _mapper.Map<MessageDto>(message);
+            await _messageNotifier.NotifyNewChannelMessageAsync(channelId, dto);
+
+            return dto;
+        }
     }
 }

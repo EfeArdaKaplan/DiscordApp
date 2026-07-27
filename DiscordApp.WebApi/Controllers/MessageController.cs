@@ -73,18 +73,21 @@ namespace DiscordApp.WebApi.Controllers
 
             return Ok(messages);
         }
-
         [HttpPost("SendVoice")]
-        [RequestSizeLimit(5_000_000)] // 5mb tavan ses dosyası sınırı koyyuok
+        [RequestSizeLimit(5_000_000)]
         public async Task<IActionResult> SendVoice([FromForm] SendVoiceRequest request)
         {
             var userId = GetUserId();
             if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-            if (request.Audio == null || request.Audio.Length == 0) 
+            if (request.Audio == null || request.Audio.Length == 0)
                 return BadRequest(new { success = false, message = "ses kaydı boş" });
 
-            var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "voice");
+            // en az biri dolu olmalı
+            if (request.ReceiverId == null && request.ChannelId == null)
+                return BadRequest(new { success = false, message = "Alıcı ya da kanal belirtilmedi" });
+
+            var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "voice"); // (bir önceki mesajdaki düzeltmeyi zaten yaptıysan bu satır aynı kalsın)
             Directory.CreateDirectory(uploadsFolder);
 
             var fileName = $"{Guid.NewGuid()}.webm";
@@ -97,7 +100,16 @@ namespace DiscordApp.WebApi.Controllers
 
             var audioUrl = $"/uploads/voice/{fileName}";
 
-            var dto = await _messageService.SendVoiceDirectMessageAsync(int.Parse(userId), request.ReceiverId, audioUrl, request.DurationSeconds);
+            MessageDto? dto;
+            if (request.ChannelId.HasValue)
+            {
+                dto = await _messageService.SendVoiceChannelMessageAsync(int.Parse(userId), request.ChannelId.Value, audioUrl, request.DurationSeconds);
+            }
+            else
+            {
+                dto = await _messageService.SendVoiceDirectMessageAsync(int.Parse(userId), request.ReceiverId!.Value, audioUrl, request.DurationSeconds);
+            }
+
             if (dto == null) return BadRequest(new { success = false, message = "mesaj gönderilemedi" });
 
             return Ok(new { success = true, message = dto });
@@ -105,7 +117,8 @@ namespace DiscordApp.WebApi.Controllers
 
         public class SendVoiceRequest
         {
-            public int ReceiverId { get; set; }
+            public int? ReceiverId { get; set; }
+            public int? ChannelId { get; set; }   // YENİ
             public int DurationSeconds { get; set; }
             public IFormFile Audio { get; set; } = null;
         }
