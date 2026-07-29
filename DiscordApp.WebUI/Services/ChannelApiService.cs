@@ -95,9 +95,10 @@ namespace DiscordApp.WebUI.Services
             return await PostSuccessAsync("api/Server/Create", new { Name = serverName });
         }
 
-        public async Task<ChannelViewModel?> CreateChannelAsync(int serverId, string channelName)
+        public async Task<ChannelViewModel?> CreateChannelAsync(int serverId, string channelName, string type)
         {
-            var result = await SendAsync<CreateChannelResponse>(HttpMethod.Post, "api/Channel/Create", new { ServerId = serverId, Name = channelName });
+            var result = await SendAsync<CreateChannelResponse>(HttpMethod.Post, "api/Channel/Create", 
+                new { ServerId = serverId, Name = channelName, Type = type });
             return result?.Channel;
         }
 

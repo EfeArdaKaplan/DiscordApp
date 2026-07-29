@@ -7,6 +7,16 @@
         <label style="font-size:12px; font-weight:bold; color:#b5bac1; display:block; margin-bottom:8px;">KANAL ADI</label>
         <input type="text" id="newChannelNameInput" placeholder="Örn: proje-notlari" style="width:100%; padding:10px; border-radius:4px; border:none; background:#1e1f22; color:#fff; box-sizing:border-box; margin-bottom:20px; outline:none;" />
 
+        <label style="font-size:12px; font-weight:bold; color:#b5bac1; display:block; margin-bottom:8px;">KANAL TÜRÜ</label>
+        <div style="display:flex; gap:10px; margin-bottom:20px;">
+            <label style="flex:1; display:flex; align-items:center; gap:8px; background:#1e1f22; padding:10px; border-radius:4px; cursor:pointer;">
+                <input type="radio" name="newChannelType" value="Text" checked /> 💬 Metin
+            </label>
+            <label style="flex:1; display:flex; align-items:center; gap:8px; background:#1e1f22; padding:10px; border-radius:4px; cursor:pointer;">
+                <input type="radio" name="newChannelType" value="Voice" /> 🔊 Ses
+            </label>
+        </div>
+
         <div style="display:flex; justify-content:flex-end; gap:12px;">
             <button onclick="closeChannelModal()" style="background:transparent; border:none; color:#fff; cursor:pointer; padding:8px 16px;">İptal</button>
             <button onclick="submitNewChannel()" style="background:#5865f2; border:none; color:#fff; padding:8px 20px; border-radius:4px; cursor:pointer; font-weight:500;">Oluştur</button>

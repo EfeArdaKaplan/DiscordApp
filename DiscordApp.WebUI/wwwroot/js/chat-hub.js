@@ -42,6 +42,10 @@ function startHubConnection() {
         }
     });
 
+    hubConnection.on("VoiceChannelUsersUpdated", (channelId, users) => {
+        renderVoiceUsers(channelId, users);
+    });
+
     hubConnection.on("ReceiveChannelMessage", (message) => {
         // message: { messageId, senderId, senderUserName, content, sentAt, channelId }
 

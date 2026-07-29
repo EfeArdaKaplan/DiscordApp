@@ -13,6 +13,7 @@
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public int ServerId { get; set; }
+        public string Type { get; set; } = "Text";
     }
 
     public class MemberViewModel

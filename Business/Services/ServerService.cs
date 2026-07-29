@@ -70,7 +70,7 @@ namespace Business.Services
             return true;
         }
 
-        public async Task<ChannelDto?> CreateChannelAsync(int serverId, string channelName, string userId)
+        public async Task<ChannelDto?> CreateChannelAsync(int serverId, string channelName, string userId, ChannelType type)
         {
             if (!int.TryParse(userId, out int parsedUserId)) return null;
             if (string.IsNullOrWhiteSpace(channelName)) return null;
@@ -79,7 +79,7 @@ namespace Business.Services
                 .AnyAsync(us => us.ServerId == serverId && us.UserId == parsedUserId);
             if (!isMember) return null;
 
-            var channel = new Channel { Name = channelName.Trim(), ServerId = serverId };
+            var channel = new Channel { Name = channelName.Trim(), ServerId = serverId , Type = type};
             _context.Channels.Add(channel);
             await _context.SaveChangesAsync();
 

@@ -71,6 +71,24 @@ app.UseMiddleware<JwtAccessMiddleware>();
 
 app.UseAuthorization();
 
+app.Use(async (context, next) =>
+{
+    context.Response.OnStarting(() =>
+    {
+        var path = context.Request.Path.Value ?? "";
+        if (path.EndsWith(".js") || path.EndsWith(".css"))
+        {
+            var ct = context.Response.ContentType;
+            if (!string.IsNullOrEmpty(ct) && !ct.Contains("charset"))
+            {
+                context.Response.ContentType = ct + "; charset=utf-8";
+            }
+        }
+        return Task.CompletedTask;
+    });
+    await next();
+});
+
 app.MapStaticAssets();
 
 app.MapControllerRoute(

@@ -12,7 +12,8 @@ namespace Business.Mapping
         public MappingProfile()
         {
             CreateMap<Server, ServerDto>();
-            CreateMap<Channel, ChannelDto>();
+            CreateMap<Channel, ChannelDto>()
+                .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.Type.ToString()));
 
             CreateMap<UserServer, MemberDto>()
                 .ForMember(dest => dest.Id, opt => opt.MapFrom(stc => stc.User.Id))

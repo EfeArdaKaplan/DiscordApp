@@ -95,7 +95,7 @@ namespace DiscordApp.WebUI.Controllers
             if (string.IsNullOrWhiteSpace(request?.Name))
                 return Json(new { success = false, message = "Kanal adı boş olamaz!" });
 
-            var channel = await _channelApiService.CreateChannelAsync(request.ServerId, request.Name);
+            var channel = await _channelApiService.CreateChannelAsync(request.ServerId, request.Name, request.Type);
             if (channel != null)
                 return Json(new { success = true, channel });
 
@@ -160,6 +160,7 @@ namespace DiscordApp.WebUI.Controllers
         {
             public int ServerId { get; set; }
             public string Name { get; set; } = string.Empty;
+            public string Type { get; set; } = "Text";
         }
     }
 }

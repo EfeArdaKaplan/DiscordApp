@@ -51,7 +51,6 @@
                     </button>
                 </div>
       <div class="sidebar-scroll">
-        <p class="section-label">Metin Kanalları</p>
         <div id="channelList"></div>
         <button class="chan-btn" id="addChannelBtn" style="color:var(--text-mut)">
           <span class="icon">＋</span>kanal ekle
@@ -135,7 +134,7 @@
     <div class="voice-controls">
       <button class="vc-btn">🎤</button>
       <button class="vc-btn">🎧</button>
-      <button class="vc-btn leave" onclick="showPage('app')">📵</button>
+      <button class="vc-btn leave" onclick="leaveVoiceChannel()">📵</button>
     </div>
   </div>
   <div class="console">
@@ -148,7 +147,7 @@
 <div id="page-settings" class="page hidden">
   <div class="center">
     <div class="settings-wrap">
-      <button class="back-link" style="padding:0;margin-bottom:16px" onclick="showPage('app')">‹ Sohbete dön</button>
+      <button class="back-link" style="padding:0;margin-bottom:16px" onclick="leaveVoiceChannel()">‹ Sohbete dön</button>
       <h1>Ayarlar</h1>
       <div class="settings-card">
         <div class="settings-row"><span class="icon">👤</span><span class="label">Profil</span><span class="value">@displayName</span></div>

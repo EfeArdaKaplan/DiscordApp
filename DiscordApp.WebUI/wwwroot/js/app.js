@@ -1,4 +1,4 @@
-// Home/Index ekranı: sunucu/DM listesi, kanal seçimi, mesajlaşma, ses ekranı ve ayarlar.
+﻿// Home/Index ekranı: sunucu/DM listesi, kanal seçimi, mesajlaşma, ses ekranı ve ayarlar.
 // window.CURRENT_USER ve window.SERVERS_DATA değerleri Index.cshtml içinde sunucudan basılır.
 let userName = window.CURRENT_USER || "Kullanıcı";
 let serversData = window.SERVERS_DATA || [];
@@ -15,7 +15,13 @@ let recordingStream = null;
 
 function buildMessageBodyHtml(m) {
     if (m.type === 'Voice') {
-        return `<audio controls src="${m.audioUrl}" style="height:32px; max-width:220px; margin-top:2px;"></audio>`;
+        // Eski kayıtlar göreli yol (/uploads/...) olabilir, yenileri MinIO'dan tam URL (http://...) geliyor
+        let src = m.audioUrl;
+        if (src && !src.startsWith('http')) {
+            const apiBase = window.HUB_URL.replace('/hubs/chat', '');
+            src = apiBase + src;
+        }
+        return `<audio controls src="${src}" style="height:32px; max-width:220px; margin-top:2px;"></audio>`;
     }
     return `<p>${linkify(escapeHtml(m.content))}</p>`;
 }
@@ -31,13 +37,13 @@ async function toggleVoiceRecording() {
     const canSendChannel = currentView === 'server' && currentChannelId;
 
     if (!canSendDM && !canSendChannel) {
-        alert('Sesli mesaj g�ndermek i�in bir arkada� ya da kanal se�melisin.');
+        alert('Sesli mesaj göndermek için bir arkadaş ya da kanal seçmelisin.');
         return;
     }
     try {
         recordingStream = await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch (err) {
-        alert('Mikrofona eri�ilemedi. Taray�c� izinlerini kontrol et.');
+        alert('Mikrofona erişilemedi. Tarayıcı izinlerini kontrol et.');
         return;
     }
 
@@ -72,7 +78,7 @@ async function onRecordingStopped() {
     formData.append('Audio', blob, 'voice.webm');
     formData.append('DurationSeconds', durationSeconds);
 
-    const isChannel = currentView === 'server' && currentChannelId; // <-- BU SATIR EKS�KT�
+    const isChannel = currentView === 'server' && currentChannelId;
 
     if (isChannel) {
         formData.append('ChannelId', currentChannelId);
@@ -94,11 +100,11 @@ async function onRecordingStopped() {
                 appendSingleMessage(data.message);
             }
         } else {
-            alert(data.message || 'Sesli mesaj g�nderilemedi.');
+            alert(data.message || 'Sesli mesaj gönderilemedi.');
         }
     } catch (err) {
         console.error(err);
-        alert('Sesli mesaj g�nderilirken ba�lant� hatas� olu�tu.');
+        alert('Sesli mesaj gönderilirken bağlantı hatası oluştu.');
     }
 }
 
@@ -168,15 +174,46 @@ function renderChannels(server) {
         return;
     }
 
-    channels.forEach((ch, index) => {
-        const btn = document.createElement('button');
-        btn.className = 'chan-btn' + (index === 0 ? ' active' : '');
-        btn.innerHTML = '<span class="icon">#</span>' + escapeHtml(ch.name);
-        btn.onclick = () => selectChannel(btn, ch);
-        list.appendChild(btn);
-    });
+    const textChannels = channels.filter(c => c.type !== 'Voice');
+    const voiceChannels = channels.filter(c => c.type === 'Voice');
 
-    selectChannel(list.querySelector('.chan-btn'), channels[0]);
+    let firstTextBtn = null;
+
+    if (textChannels.length > 0) {
+        const header = document.createElement('p');
+        header.className = 'section-label';
+        header.textContent = 'METİN KANALLARI';
+        list.appendChild(header);
+
+        textChannels.forEach((ch) => {
+            const btn = document.createElement('button');
+            btn.className = 'chan-btn';
+            btn.innerHTML = '<span class="icon">#</span>' + escapeHtml(ch.name);
+            btn.onclick = () => selectChannel(btn, ch);
+            list.appendChild(btn);
+            if (!firstTextBtn) firstTextBtn = btn;
+        });
+    }
+
+    if (voiceChannels.length > 0) {
+        const header = document.createElement('p');
+        header.className = 'section-label';
+        header.textContent = 'SES KANALLARI';
+        list.appendChild(header);
+
+        voiceChannels.forEach((ch) => {
+            const btn = document.createElement('button');
+            btn.className = 'chan-btn';
+            btn.innerHTML = '<span class="icon">🔊</span>' + escapeHtml(ch.name);
+            btn.onclick = () => joinVoiceChannel(ch);
+            list.appendChild(btn);
+        });
+    }
+
+    if (firstTextBtn) {
+        firstTextBtn.classList.add('active');
+        selectChannel(firstTextBtn, textChannels[0]);
+    }
 }
 
 async function loadMembers(serverId) {
@@ -211,7 +248,7 @@ function escapeHtml(str) {
     return d.innerHTML;
 }
 function linkify(escapedText) {
-    const urlRegex = /\b((?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}(?:\/[^\s<]*)?)\b/gi;
+    const urlRegex = /\b((?:https?:\/\/(?:localhost|(?:\d{1,3}\.){3}\d{1,3})(?::\d{1,5})?(?:\/[^\s<]*)?)|(?:(?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}(?:\/[^\s<]*)?))\b/gi;
 
     return escapedText.replace(urlRegex, (match) => {
         let href = match;
@@ -266,7 +303,7 @@ function renderDMList() {
     list.innerHTML = '';
 
     if (friendsData.length === 0) {
-        list.innerHTML = '<p class="section-label">Henüz arkadaşın yok, ＋ ile ekleyebilirsin.</p>';
+        list.innerHTML = '<p class="section-label">Henüz arkadaşın yok, + ile ekleyebilirsin.</p>';
         return;
     }
 
@@ -429,7 +466,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateLocalUserProfile(); // Kullanıcı adını sol altta güncelle
     renderDMList(); // Varsayılan görünüm DM olduğu için arkadaş listesini hemen doldur
 
-    // '+' butonunu bul ve Model açma olayını bağla
+    // '+' butonunu bul ve Modal açma olayını bağla
     const addBtn = document.querySelector(".rail-add");
     if (addBtn) {
         addBtn.addEventListener("click", openServerModal);
@@ -564,6 +601,8 @@ async function inviteFriendToCurrentServer(receiverId, btn) {
 async function submitNewChannel() {
     const input = document.getElementById("newChannelNameInput");
     const channelName = input ? input.value.trim() : "";
+    const typeInput = document.querySelector('input[name="newChannelType"]:checked');
+    const channelType = typeInput ? typeInput.value : "Text";
 
     if (!channelName) { alert("Lütfen bir kanal adı girin!"); return; }
     if (!currentServerId) { alert("Önce bir sunucu seç!"); return; }
@@ -572,13 +611,12 @@ async function submitNewChannel() {
         const response = await fetch('/Home/CreateChannel', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ serverId: currentServerId, name: channelName })
+            body: JSON.stringify({ serverId: currentServerId, name: channelName, type: channelType })
         });
         const resData = await response.json();
 
         if (resData.success) {
             closeChannelModal();
-            // Listeye ekleme artık "ChannelCreated" SignalR event'inin işi.
         } else {
             alert(resData.message || "Kanal oluşturulurken bir hata oluştu.");
         }
@@ -615,7 +653,7 @@ setInterval(checkPendingRequests, 15000); // her 15 saniyede bir kontrol et
 
 async function copyInviteLink() {
     if (!currentServerId) {
-        alert('�nce bir sunucu se�.');
+        alert('Önce bir sunucu seç.');
         return;
     }
 
@@ -624,16 +662,64 @@ async function copyInviteLink() {
         const data = await res.json();
 
         if (!data.success || !data.inviteCode) {
-            alert(data.message || 'Davet linki al�namad�.');
+            alert(data.message || 'Davet linki alınamadı.');
             return;
         }
 
         const inviteUrl = `${window.location.origin}/invite/${data.inviteCode}`;
 
         await navigator.clipboard.writeText(inviteUrl);
-        alert('Davet linki kopyalandi!');
+        alert('Davet linki kopyalandı!');
     } catch (err) {
-        console.error('Davet linki kopyalanamad�:', err);
-        alert('Davet linki kopyalanirken bir hata olu�tu.');
+        console.error('Davet linki kopyalanamadı:', err);
+        alert('Davet linki kopyalanırken bir hata oluştu.');
     }
+}
+
+let currentVoiceChannelId = null;
+
+async function joinVoiceChannel(channel) {
+    if (!hubConnection || hubConnection.state !== signalR.HubConnectionState.Connected) {
+        alert('Bağlantı hazır değil, birazdan tekrar dene.');
+        return;
+    }
+
+    currentVoiceChannelId = channel.id;
+    document.getElementById('voiceRoomName').textContent = channel.name;
+    showPage('voice');
+
+    try {
+        await hubConnection.invoke('JoinVoiceChannel', channel.id);
+    } catch (err) {
+        console.error('JoinVoiceChannel hatası:', err);
+        alert('Sesli kanala katılamadın.');
+    }
+}
+
+function leaveVoiceChannel() {
+    if (currentVoiceChannelId !== null && hubConnection && hubConnection.state === signalR.HubConnectionState.Connected) {
+        hubConnection.invoke('LeaveVoiceChannel', currentVoiceChannelId).catch(err => console.error(err));
+    }
+    currentVoiceChannelId = null;
+    showPage('app');
+}
+
+function renderVoiceUsers(channelId, users) {
+    if (channelId !== currentVoiceChannelId) return; // başka bir odanın güncellemesiyse yoksay
+
+    const grid = document.querySelector('#page-voice .voice-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    if (users.length === 0) {
+        grid.innerHTML = '<p class="section-label">Bu kanalda henüz kimse yok.</p>';
+        return;
+    }
+
+    users.forEach(u => {
+        const tile = document.createElement('div');
+        tile.className = 'voice-tile';
+        tile.innerHTML = `<div class="voice-avatar">${initials(u.userName)}</div><p>${escapeHtml(u.userName)}</p>`;
+        grid.appendChild(tile);
+    });
 }

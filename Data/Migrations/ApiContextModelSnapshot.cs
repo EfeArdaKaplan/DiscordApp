@@ -112,6 +112,9 @@ namespace Data.Migrations
                     b.Property<int>("ServerId")
                         .HasColumnType("int");
 
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ServerId");

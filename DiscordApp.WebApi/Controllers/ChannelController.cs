@@ -1,9 +1,11 @@
 ﻿using Business.Abstract;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Core.Enums;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using System.Reflection.Metadata.Ecma335;
 
 namespace DiscordApp.WebApi.Controllers
 {
@@ -30,7 +32,8 @@ namespace DiscordApp.WebApi.Controllers
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized(new { message = "Token var ama içinden ID okunamadı!" });
 
-            var channel = await _serverService.CreateChannelAsync(dto.ServerId, dto.Name, userId);
+            var type = dto.Type == "Voice" ? ChannelType.Voice : ChannelType.Text;
+            var channel = await _serverService.CreateChannelAsync(dto.ServerId, dto.Name, userId, type);
             if (channel != null)
                 return Ok(new { success = true, channel });
 
@@ -42,5 +45,6 @@ namespace DiscordApp.WebApi.Controllers
     {
         public int ServerId { get; set; }
         public string Name { get; set; } = string.Empty;
+        public string Type { get; set; } = "Text";
     }
 }
