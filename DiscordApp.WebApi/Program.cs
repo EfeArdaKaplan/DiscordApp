@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using DiscordApp.WebApi.Storage;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,6 +25,7 @@ builder.Services.AddScoped<IMessageService, MessageService>();
 builder.Services.AddAutoMapper(cfg => { }, typeof(MappingProfile));
 builder.Services.AddScoped<IMessageNotifier, SignalRMessageNotifier>();
 builder.Services.AddScoped<IServerNotifier, SignalRServerNotifier>();
+builder.Services.AddSingleton<IFileStorageService, MinioStorageService>();
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {

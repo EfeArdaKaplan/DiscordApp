@@ -1,8 +1,8 @@
 ﻿using Business.Abstract;
 using Business.Dtos;
+using DiscordApp.WebApi.Storage;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
@@ -14,12 +14,14 @@ namespace DiscordApp.WebApi.Controllers
     public class MessageController : ControllerBase
     {
         private readonly IMessageService _messageService;
-        private readonly IWebHostEnvironment _env;
+        private readonly IFileStorageService _fileStorage;
+        private readonly IConfiguration _config;
 
-        public MessageController(IMessageService messageService, IWebHostEnvironment webHostEnvironment)
+        public MessageController(IMessageService messageService, IFileStorageService fileStorage, IConfiguration config)
         {
             _messageService = messageService;
-            _env = webHostEnvironment;
+            _fileStorage = fileStorage;
+            _config = config;
         }
 
         private string? GetUserId()
@@ -73,6 +75,7 @@ namespace DiscordApp.WebApi.Controllers
 
             return Ok(messages);
         }
+
         [HttpPost("SendVoice")]
         [RequestSizeLimit(5_000_000)]
         public async Task<IActionResult> SendVoice([FromForm] SendVoiceRequest request)
@@ -83,22 +86,12 @@ namespace DiscordApp.WebApi.Controllers
             if (request.Audio == null || request.Audio.Length == 0)
                 return BadRequest(new { success = false, message = "ses kaydı boş" });
 
-            // en az biri dolu olmalı
             if (request.ReceiverId == null && request.ChannelId == null)
                 return BadRequest(new { success = false, message = "Alıcı ya da kanal belirtilmedi" });
 
-            var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "voice"); // (bir önceki mesajdaki düzeltmeyi zaten yaptıysan bu satır aynı kalsın)
-            Directory.CreateDirectory(uploadsFolder);
-
             var fileName = $"{Guid.NewGuid()}.webm";
-            var filePath = Path.Combine(uploadsFolder, fileName);
-
-            using (var stream = new FileStream(filePath, FileMode.Create))
-            {
-                await request.Audio.CopyToAsync(stream);
-            }
-
-            var audioUrl = $"/uploads/voice/{fileName}";
+            var voiceBucket = _config["Minio:VoiceBucket"]!;
+            var audioUrl = await _fileStorage.UploadAsync(request.Audio.OpenReadStream(), fileName, "audio/webm", voiceBucket);
 
             MessageDto? dto;
             if (request.ChannelId.HasValue)
@@ -118,9 +111,9 @@ namespace DiscordApp.WebApi.Controllers
         public class SendVoiceRequest
         {
             public int? ReceiverId { get; set; }
-            public int? ChannelId { get; set; }   // YENİ
+            public int? ChannelId { get; set; }
             public int DurationSeconds { get; set; }
-            public IFormFile Audio { get; set; } = null;
+            public IFormFile? Audio { get; set; } = null;
         }
     }
 }

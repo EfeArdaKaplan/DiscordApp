@@ -15,12 +15,10 @@ let recordingStream = null;
 
 function buildMessageBodyHtml(m) {
     if (m.type === 'Voice') {
-        const apiBase = window.HUB_URL.replace('/hubs/chat', '');
-        return `<audio controls src="${apiBase}${m.audioUrl}" style="height:32px; max-width:220px; margin-top:2px;"></audio>`;
+        return `<audio controls src="${m.audioUrl}" style="height:32px; max-width:220px; margin-top:2px;"></audio>`;
     }
-    return `<p>${linkify(escapeHtml(m.content))}</p>`; 
+    return `<p>${linkify(escapeHtml(m.content))}</p>`;
 }
-
 // voice işlemleri
 
 async function toggleVoiceRecording() {
