@@ -1,5 +1,6 @@
 using DiscordApp.WebUI.Abstract;
 using DiscordApp.WebUI.Models;
+using DiscordApp.WebUI.Security;
 using DiscordApp.WebUI.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 
@@ -23,6 +24,8 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 
 // 3. HttpContext Accessor (Cookie ve Session erişimleri için)
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddDataProtection();
+builder.Services.AddSingleton<TokenProtector>();
 
 // 4. AuthApiService & HttpClient Kaydı
 // API adresi TEK bir yerden okunuyor: appsettings.json -> ApiSettings:BaseUrl
@@ -63,6 +66,9 @@ app.UseHttpsRedirection();
 app.UseRouting();
 
 app.UseAuthentication();
+
+app.UseMiddleware<JwtAccessMiddleware>();
+
 app.UseAuthorization();
 
 app.MapStaticAssets();

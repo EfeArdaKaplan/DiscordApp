@@ -18,7 +18,7 @@ function buildMessageBodyHtml(m) {
         const apiBase = window.HUB_URL.replace('/hubs/chat', '');
         return `<audio controls src="${apiBase}${m.audioUrl}" style="height:32px; max-width:220px; margin-top:2px;"></audio>`;
     }
-    return `<p>${escapeHtml(m.content)}</p>`;
+    return `<p>${linkify(escapeHtml(m.content))}</p>`; 
 }
 
 // voice iÅŸlemleri
@@ -211,6 +211,24 @@ function escapeHtml(str) {
     const d = document.createElement('div');
     d.textContent = str ?? '';
     return d.innerHTML;
+}
+function linkify(escapedText) {
+    const urlRegex = /\b((?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}(?:\/[^\s<]*)?)\b/gi;
+
+    return escapedText.replace(urlRegex, (match) => {
+        let href = match;
+        if (!href.startsWith('http://') && !href.startsWith('https://')) {
+            href = 'https://' + href;
+        }
+        let trailing = '';
+        const trailingMatch = href.match(/[.,!?;:)]+$/);
+        if (trailingMatch) {
+            trailing = trailingMatch[0];
+            href = href.slice(0, -trailing.length);
+            match = match.slice(0, -trailing.length);
+        }
+        return `<a href="${href}" target="_blank" rel="noopener noreferrer">${match}</a>${trailing}`;
+    });
 }
 
 async function selectChannel(el, channel) {
@@ -596,3 +614,28 @@ async function checkPendingRequests() {
 
 checkPendingRequests();
 setInterval(checkPendingRequests, 15000); // her 15 saniyede bir kontrol et
+
+async function copyInviteLink() {
+    if (!currentServerId) {
+        alert('Önce bir sunucu seç.');
+        return;
+    }
+
+    try {
+        const res = await fetch(`/Home/GetInviteLink?serverId=${currentServerId}`);
+        const data = await res.json();
+
+        if (!data.success || !data.inviteCode) {
+            alert(data.message || 'Davet linki alýnamadý.');
+            return;
+        }
+
+        const inviteUrl = `${window.location.origin}/invite/${data.inviteCode}`;
+
+        await navigator.clipboard.writeText(inviteUrl);
+        alert('Davet linki kopyalandi!');
+    } catch (err) {
+        console.error('Davet linki kopyalanamadý:', err);
+        alert('Davet linki kopyalanirken bir hata oluþtu.');
+    }
+}

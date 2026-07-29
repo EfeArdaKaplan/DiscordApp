@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
+using DiscordApp.WebUI.Security;
 
 namespace DiscordApp.WebUI.Services
 {
@@ -22,8 +23,7 @@ namespace DiscordApp.WebUI.Services
 
         private string? GetToken()
         {
-            var token = _httpContextAccessor.HttpContext?.User.FindFirst("JWToken")?.Value
-                     ?? _httpContextAccessor.HttpContext?.User.FindFirst("Token")?.Value;
+            var token = _httpContextAccessor.HttpContext?.Items["JwtToken"] as string;
 
             // Eğer token'ın içinde yanlışlıkla "Bearer " kelimesi kaldıysa onu temizler
             if (!string.IsNullOrEmpty(token) && token.StartsWith("Bearer ", System.StringComparison.OrdinalIgnoreCase))

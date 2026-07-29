@@ -1,5 +1,6 @@
 ﻿using DiscordApp.WebUI.Abstract;
 using DiscordApp.WebUI.Models;
+using DiscordApp.WebUI.Security;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
@@ -10,10 +11,12 @@ namespace DiscordApp.WebUI.Controllers
     public class AuthController : Controller
     {
         private readonly IAuthApiService _authApiService;
+        private readonly TokenProtector _tokenProtector;
 
-        public AuthController(IAuthApiService authApiService)
+        public AuthController(IAuthApiService authApiService, TokenProtector tokenProtector)
         {
             _authApiService = authApiService;
+            _tokenProtector = tokenProtector;
         }
 
         [HttpGet]
@@ -36,7 +39,7 @@ namespace DiscordApp.WebUI.Controllers
                     new Claim(ClaimTypes.NameIdentifier, result.Data.UserId.ToString()),
                     new Claim(ClaimTypes.Name, result.Data.Username ?? string.Empty),
                     new Claim(ClaimTypes.Email, result.Data.Email ?? string.Empty),
-                    new Claim("JWToken", result.Data.Token ?? string.Empty) 
+                    new Claim("JWToken", _tokenProtector.Protect(result.Data.Token ?? string.Empty)) 
                 };
 
                 var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);

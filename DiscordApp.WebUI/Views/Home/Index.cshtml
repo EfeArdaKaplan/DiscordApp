@@ -195,7 +195,7 @@
         window.CURRENT_USER_ID = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
                 User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.NameIdentifier)?.Value));
         window.JWT_TOKEN = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
-                User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value));
+                            Context.Items["JwtToken"] as string));
         window.HUB_URL = "@(Configuration["ApiSettings:BaseUrl"])/hubs/chat";
 
         window.SERVERS_DATA = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
@@ -205,6 +205,6 @@
                 ViewBag.Friends ?? new List<DiscordApp.WebUI.Models.UserSearchResultViewModel>(),
                 new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }));
     </script>
-    <script src="~/js/app.js"></script>
-    <script src="~/js/chat-hub.js"></script>
+    <script src="~/js/app.js" charset="utf-8"></script>
+    <script src="~/js/chat-hub.js" charset="utf-8"></script>
 }

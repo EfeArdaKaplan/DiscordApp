@@ -23,7 +23,7 @@ namespace DiscordApp.WebUI.Services
                 var request = new HttpRequestMessage(method, url);
                 if (body != null) request.Content = JsonContent.Create(body);
 
-                var token = _httpContextAccessor.HttpContext?.User.FindFirst("JWToken")?.Value;
+                var token = _httpContextAccessor.HttpContext?.Items["JwtToken"] as string;
                 if (!string.IsNullOrEmpty(token))
                     request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 

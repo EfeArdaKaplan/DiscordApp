@@ -211,6 +211,15 @@ input {
     height: 100vh;
 }
 
+.msg-body a, p a {
+    color: #00a8fc;
+    text-decoration: none;
+}
+
+    .msg-body a:hover, p a:hover {
+        text-decoration: underline;
+    }
+
 .app-body {
     flex: 1;
     display: flex;
