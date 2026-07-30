@@ -649,7 +649,7 @@ async function checkPendingRequests() {
 }
 
 checkPendingRequests();
-setInterval(checkPendingRequests, 15000); // her 15 saniyede bir kontrol et
+setInterval(checkPendingRequests, 120000); // her 15 saniyede bir kontrol et
 
 async function copyInviteLink() {
     if (!currentServerId) {

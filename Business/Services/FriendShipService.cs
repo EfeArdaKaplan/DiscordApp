@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
+using Business.Abstract;
 using Business.Dtos;
 using Core.Entities;
 using Core.Enums;
@@ -15,17 +16,19 @@ namespace Business.Services
     {
         private readonly ApiContext _context;
         private readonly IMapper _mapper;
-        public FriendShipService(ApiContext context, IMapper mapper)
+        private readonly IFriendNotifier _friendNotifier;
+
+        public FriendShipService(ApiContext context, IMapper mapper, IFriendNotifier friendNotifier)
         {
             _context = context;
             _mapper = mapper;
+            _friendNotifier = friendNotifier;
         }
-        public bool SendRequest(SendFriendRequestDto dto)
+
+        public async Task<bool> SendRequest(SendFriendRequestDto dto)
         {
-            // kendine istek atamama olayı
             if (dto.SenderId == dto.ReceiverId) return false;
 
-            // zaten var olan bir istek veya arkaşlık var mı 
             var existing = _context.FriendShips.FirstOrDefault(f =>
                 (f.SenderId == dto.SenderId && f.ReceiverId == dto.ReceiverId) ||
                 (f.SenderId == dto.ReceiverId && f.ReceiverId == dto.SenderId));
@@ -42,11 +45,13 @@ namespace Business.Services
 
             _context.FriendShips.Add(friendship);
             _context.SaveChanges();
+
+            await _friendNotifier.NotifyPendingCountChangedAsync(dto.ReceiverId); 
+
             return true;
         }
 
-        // bekleyen isteklers
-        public bool RespondToRequest(FriendRequestActionDto dto, int respondingUserId)
+        public async Task<bool> RespondToRequest(FriendRequestActionDto dto, int respondingUserId)
         {
             var request = _context.FriendShips.FirstOrDefault(f => f.FriendShipId == dto.FriendShipId);
             if (request == null) return false;
@@ -56,10 +61,12 @@ namespace Business.Services
             request.Status = dto.IsAccepted == 1 ? FriendShipStatus.Accepted : FriendShipStatus.Rejected;
 
             _context.SaveChanges();
+
+            await _friendNotifier.NotifyPendingCountChangedAsync(respondingUserId); 
+
             return true;
         }
 
-        // bir kullanıcının Arkadaş listesini getirme
         public List<UserSummaryDto> GetFriends(int userId)
         {
             var friendIds = _context.FriendShips
@@ -73,7 +80,7 @@ namespace Business.Services
                 .ToList();
         }
 
-        public List<PendingRequestDto> GetPendingRequests (int userId)
+        public List<PendingRequestDto> GetPendingRequests(int userId)
         {
             return _context.FriendShips
                 .Where(f => f.ReceiverId == userId && f.Status == FriendShipStatus.Pending)

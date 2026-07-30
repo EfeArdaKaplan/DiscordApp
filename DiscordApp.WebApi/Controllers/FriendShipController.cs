@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Business.Abstract;
 using Business.Dtos;
 using Business.Services;
 using Data.Context;
@@ -16,11 +17,10 @@ namespace DiscordApp.WebApi.Controllers
         private readonly FriendShipService _friendshipService;
         private readonly ApiContext _context;
 
-
-        public FriendShipController(ApiContext context, IMapper mapper)
+        public FriendShipController(ApiContext context, IMapper mapper, IFriendNotifier friendNotifier)
         {
             _context = context;
-            _friendshipService = new FriendShipService(_context, mapper);
+            _friendshipService = new FriendShipService(_context, mapper, friendNotifier);
         }
 
         private string? GetUserID()
@@ -29,25 +29,25 @@ namespace DiscordApp.WebApi.Controllers
         }
 
         [HttpPost("send-request")]
-        public IActionResult SendRequest([FromBody] SendFriendRequestDto dto)
+        public async Task<IActionResult> SendRequest([FromBody] SendFriendRequestDto dto)
         {
             var userId = GetUserID();
             if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
             dto.SenderId = int.Parse(userId);
-            var result = _friendshipService.SendRequest(dto);
+            var result = await _friendshipService.SendRequest(dto);
             if (!result) return BadRequest("İstek Gönderilemedi. Geçersiz Kullanıcı veya zaten bir istek/arkadaşlık mevcut.");
 
             return Ok("Arkadaşlık isteği başarıyla gönderildi.");
         }
 
         [HttpPost("respond-request")]
-        public IActionResult respondRequest([FromBody] FriendRequestActionDto dto)
+        public async Task<IActionResult> respondRequest([FromBody] FriendRequestActionDto dto)
         {
             var userId = GetUserID();
             if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-            var result = _friendshipService.RespondToRequest(dto, int.Parse(userId));
+            var result = await _friendshipService.RespondToRequest(dto, int.Parse(userId));
             if (!result) return BadRequest("İstek bulunamadı veya işlem başarısız.");
 
             return Ok("Yanıtınız kaydedildi.");
@@ -70,6 +70,7 @@ namespace DiscordApp.WebApi.Controllers
 
             return Ok(_friendshipService.GetFriends(int.Parse(userId)));
         }
+
         [HttpGet("pending-count")]
         public IActionResult GetPendingCount()
         {
@@ -80,8 +81,7 @@ namespace DiscordApp.WebApi.Controllers
             var pendingFriendsCount = _friendshipService.GetPendingRequests(parsedUserId).Count();
 
             var pendingServerInvitesCount = _context.ServerInvitations
-                .Count(si => si.ReceiverId == parsedUserId && si.Status == 0); 
-
+                .Count(si => si.ReceiverId == parsedUserId && si.Status == 0);
 
             return Ok(new { count = pendingFriendsCount + pendingServerInvitesCount });
         }

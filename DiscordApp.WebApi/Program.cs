@@ -22,9 +22,11 @@ builder.Services.AddDbContext<ApiContext>(option => option.UseSqlServer(builder.
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IServerService, ServerService>(); //
 builder.Services.AddScoped<IMessageService, MessageService>();
+builder.Services.AddScoped<IMessageEncryptionService, MessageEncryptionService>();
 builder.Services.AddAutoMapper(cfg => { }, typeof(MappingProfile));
 builder.Services.AddScoped<IMessageNotifier, SignalRMessageNotifier>();
 builder.Services.AddScoped<IServerNotifier, SignalRServerNotifier>();
+builder.Services.AddScoped<IFriendNotifier, SignalRFriendNotifier>();
 builder.Services.AddSingleton<IFileStorageService, MinioStorageService>();
 builder.Services.AddControllers()
     .AddJsonOptions(options =>

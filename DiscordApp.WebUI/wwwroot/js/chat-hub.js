@@ -41,6 +41,9 @@ function startHubConnection() {
             renderChannels(server);
         }
     });
+    hubConnection.on("PendingCountChanged", () => {
+        checkPendingRequests(); // sunucu haber verdi, hemen rozet sayısını tazele
+    });
 
     hubConnection.on("VoiceChannelUsersUpdated", (channelId, users) => {
         renderVoiceUsers(channelId, users);

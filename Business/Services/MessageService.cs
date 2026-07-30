@@ -19,13 +19,15 @@ namespace Business.Services
         private readonly IMapper _mapper;
         private readonly IMessageNotifier _messageNotifier;
         private readonly IServerService _serverService;
+        private readonly IMessageEncryptionService _encryption;
 
-        public MessageService(ApiContext context, IMapper mapper, IMessageNotifier messageNotifier, IServerService serverService)
+        public MessageService(ApiContext context, IMapper mapper, IMessageNotifier messageNotifier, IServerService serverService, IMessageEncryptionService encryption)
         {
             _context = context;
             _mapper = mapper;
             _messageNotifier = messageNotifier;
             _serverService = serverService;
+            _encryption = encryption;
         }
 
         public async Task<bool> SendDirectMessageAsync(int senderId, int receiverId, string content)
@@ -38,13 +40,13 @@ namespace Business.Services
                 ((f.SenderId == senderId && f.ReceiverId == receiverId) ||
                  (f.SenderId == receiverId && f.ReceiverId == senderId)));
 
-            if(!areFriends) return false;
+            if (!areFriends) return false;
 
             var message = new Message
             {
                 SenderId = senderId,
                 ReceiverId = receiverId,
-                Content = content.Trim(),
+                Content = _encryption.Encrypt(content.Trim()),
                 SentAt = DateTime.UtcNow,
             };
 
@@ -54,9 +56,11 @@ namespace Business.Services
             await _context.Entry(message).Reference(m => m.Sender).LoadAsync();
 
             var dto = _mapper.Map<MessageDto>(message);
+            dto.Content = content.Trim(); // canlı bildirimde (SignalR) şifreli değil düz metni gönder, alıcı direkt görsün
             await _messageNotifier.NotifyNewMessageAsync(receiverId, dto);
             return true;
         }
+
         public async Task<MessageDto?> SendVoiceDirectMessageAsync(int senderId, int receiverId, string audioUrl, int durationSeconds)
         {
             if (senderId == receiverId) return null;
@@ -87,15 +91,54 @@ namespace Business.Services
 
             return dto;
         }
+
+        public async Task<MessageDto?> SendVoiceChannelMessageAsync(int senderId, int channelId, string audioUrl, int durationSeconds)
+        {
+            var channel = await _context.Channels.FirstOrDefaultAsync(c => c.Id == channelId);
+            if (channel == null) return null;
+
+            if (!await _serverService.IsMemberAsync(channel.ServerId, senderId)) return null;
+
+            var message = new Message
+            {
+                SenderId = senderId,
+                ChannelId = channelId,
+                Content = string.Empty,
+                Type = MessageType.Voice,
+                AudioUrl = audioUrl,
+                AudioDurationSeconds = durationSeconds,
+                SentAt = DateTime.UtcNow,
+            };
+
+            _context.Messages.Add(message);
+            await _context.SaveChangesAsync();
+
+            await _context.Entry(message).Reference(m => m.Sender).LoadAsync();
+
+            var dto = _mapper.Map<MessageDto>(message);
+            await _messageNotifier.NotifyNewChannelMessageAsync(channelId, dto);
+
+            return dto;
+        }
+
         public async Task<List<MessageDto>> GetConversationAsync(int userId, int otherUserId)
         {
-            return await _context.Messages
+            var messages = await _context.Messages
                 .Where(m => m.ChannelId == null &&
                     ((m.SenderId == userId && m.ReceiverId == otherUserId) ||
                      (m.SenderId == otherUserId && m.ReceiverId == userId)))
                 .OrderBy(m => m.SentAt)
-                .ProjectTo<MessageDto>(_mapper.ConfigurationProvider)
+                .Include(m => m.Sender)
                 .ToListAsync();
+
+            var dtos = _mapper.Map<List<MessageDto>>(messages);
+            foreach (var dto in dtos)
+            {
+                dto.SentAt = DateTime.SpecifyKind(dto.SentAt, DateTimeKind.Utc); // turkiye saati
+                if (dto.Type == "Text")
+                    dto.Content = _encryption.Decrypt(dto.Content);
+            }
+            return dtos;
         }
 
         public async Task<bool> SendChannelMessageAsync(int senderId, int channelId, string content)
@@ -111,7 +154,7 @@ namespace Business.Services
             {
                 SenderId = senderId,
                 ChannelId = channelId,
-                Content = content.Trim(),
+                Content = _encryption.Encrypt(content.Trim()),
                 SentAt = DateTime.UtcNow,
             };
 
@@ -121,6 +164,7 @@ namespace Business.Services
             await _context.Entry(message).Reference(m => m.Sender).LoadAsync();
 
             var dto = _mapper.Map<MessageDto>(message);
+            dto.Content = content.Trim(); // canlı bildirimde düz metin gönder
             await _messageNotifier.NotifyNewChannelMessageAsync(channelId, dto);
             return true;
         }
@@ -132,40 +176,20 @@ namespace Business.Services
 
             if (!await _serverService.IsMemberAsync(channel.ServerId, requestingUserId)) return null;
 
-            return await _context.Messages
+            var messages = await _context.Messages
                 .Where(m => m.ChannelId == channelId)
                 .OrderBy(m => m.SentAt)
-                .ProjectTo<MessageDto>(_mapper.ConfigurationProvider)
+                .Include(m => m.Sender)
                 .ToListAsync();
-        }
 
-        public async Task<MessageDto?> SendVoiceChannelMessageAsync(int senderId, int channelId, string audioUrl, int durationSeconds)
-        {
-            var channel = await _context.Channels.FirstOrDefaultAsync(c => c.Id == channelId);
-            if (channelId ==null) return null;
-            
-            if(!await _serverService.IsMemberAsync(channel.ServerId, senderId)) return null;
-
-            var message = new Message
+            var dtos = _mapper.Map<List<MessageDto>>(messages);
+            foreach (var dto in dtos)
             {
-                SenderId = senderId,
-                ChannelId = channelId,
-                Content = string.Empty,
-                Type = MessageType.Voice,
-                AudioUrl = audioUrl,
-                AudioDurationSeconds = durationSeconds,
-                SentAt = DateTime.UtcNow,
-            };
-
-            _context.Messages .Add(message);
-            await _context.SaveChangesAsync();
-
-            await _context.Entry(message).Reference(m => m.Sender).LoadAsync();
-
-            var dto = _mapper.Map<MessageDto>(message);
-            await _messageNotifier.NotifyNewChannelMessageAsync(channelId, dto);
-
-            return dto;
+                dto.SentAt = DateTime.SpecifyKind(dto.SentAt, DateTimeKind.Utc); // türkiye saati
+                if (dto.Type == "Text")
+                    dto.Content = _encryption.Decrypt(dto.Content);
+            }
+            return dtos;
         }
     }
 }
