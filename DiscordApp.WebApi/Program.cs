@@ -118,6 +118,13 @@ if (!Directory.Exists(voicePath))
 
 var app = builder.Build();
 
+// docker içins
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ApiContext>();
+    db.Database.Migrate();
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
