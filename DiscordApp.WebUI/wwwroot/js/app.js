@@ -689,7 +689,19 @@ async function joinVoiceChannel(channel) {
     showPage('voice');
 
     try {
-        await hubConnection.invoke('JoinVoiceChannel', channel.id);
+        await startLocalAudio(); // mikrofon izni burada istenir
+    } catch (err) {
+        alert('Mikrofona erişilemedi. Tarayıcı izinlerini kontrol et.');
+        showPage('app');
+        currentVoiceChannelId = null;
+        return;
+    }
+
+    try {
+        const existingPeers = await hubConnection.invoke('JoinVoiceChannel', channel.id);
+        for (const peer of existingPeers) {
+            await callPeer(peer.connectionId);
+        }
     } catch (err) {
         console.error('JoinVoiceChannel hatası:', err);
         alert('Sesli kanala katılamadın.');
@@ -700,12 +712,15 @@ function leaveVoiceChannel() {
     if (currentVoiceChannelId !== null && hubConnection && hubConnection.state === signalR.HubConnectionState.Connected) {
         hubConnection.invoke('LeaveVoiceChannel', currentVoiceChannelId).catch(err => console.error(err));
     }
+    closeAllPeerConnections();
+    stopLocalAudio();
+    isMicMuted = false;
     currentVoiceChannelId = null;
     showPage('app');
 }
 
 function renderVoiceUsers(channelId, users) {
-    if (channelId !== currentVoiceChannelId) return; // başka bir odanın güncellemesiyse yoksay
+    if (channelId !== currentVoiceChannelId) return;
 
     const grid = document.querySelector('#page-voice .voice-grid');
     if (!grid) return;
@@ -713,13 +728,19 @@ function renderVoiceUsers(channelId, users) {
 
     if (users.length === 0) {
         grid.innerHTML = '<p class="section-label">Bu kanalda henüz kimse yok.</p>';
-        return;
+    } else {
+        users.forEach(u => {
+            const tile = document.createElement('div');
+            tile.className = 'voice-tile';
+            tile.innerHTML = `<div class="voice-avatar">${initials(u.userName)}</div><p>${escapeHtml(u.userName)}</p>`;
+            grid.appendChild(tile);
+        });
     }
 
-    users.forEach(u => {
-        const tile = document.createElement('div');
-        tile.className = 'voice-tile';
-        tile.innerHTML = `<div class="voice-avatar">${initials(u.userName)}</div><p>${escapeHtml(u.userName)}</p>`;
-        grid.appendChild(tile);
+    const activeConnectionIds = users.map(u => u.connectionId);
+    Object.keys(peerConnections).forEach(connId => {
+        if (!activeConnectionIds.includes(connId)) {
+            removePeerConnection(connId);
+        }
     });
 }

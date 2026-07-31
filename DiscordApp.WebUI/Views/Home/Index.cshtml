@@ -132,7 +132,7 @@
       <div class="voice-tile"><div class="voice-avatar">DE</div><p>Deniz</p><span class="mute-badge">🔇</span></div>
     </div>
     <div class="voice-controls">
-      <button class="vc-btn">🎤</button>
+      <button class="vc-btn" id="micToggleBtn" onclick="toggleMic(this)">🎤</button>
       <button class="vc-btn">🎧</button>
       <button class="vc-btn leave" onclick="leaveVoiceChannel()">📵</button>
     </div>
@@ -204,6 +204,7 @@
                 ViewBag.Friends ?? new List<DiscordApp.WebUI.Models.UserSearchResultViewModel>(),
                 new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }));
     </script>
+    <script src="~/js/webrtc.js"></script>
     <script src="~/js/app.js" charset="utf-8"></script>
     <script src="~/js/chat-hub.js" charset="utf-8"></script>
 }

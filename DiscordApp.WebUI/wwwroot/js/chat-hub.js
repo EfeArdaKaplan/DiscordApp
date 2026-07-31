@@ -45,6 +45,18 @@ function startHubConnection() {
         checkPendingRequests(); // sunucu haber verdi, hemen rozet sayısını tazele
     });
 
+    hubConnection.on("ReceiveVoiceOffer", (fromConnectionId, offerJson) => {
+        handleReceiveVoiceOffer(fromConnectionId, offerJson);
+    });
+
+    hubConnection.on("ReceiveVoiceAnswer", (fromConnectionId, answerJson) => {
+        handleReceiveVoiceAnswer(fromConnectionId, answerJson);
+    });
+
+    hubConnection.on("ReceiveVoiceIceCandidate", (fromConnectionId, candidateJson) => {
+        handleReceiveVoiceIceCandidate(fromConnectionId, candidateJson);
+    });
+
     hubConnection.on("VoiceChannelUsersUpdated", (channelId, users) => {
         renderVoiceUsers(channelId, users);
     });
