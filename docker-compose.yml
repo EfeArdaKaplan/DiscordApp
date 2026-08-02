@@ -91,7 +91,8 @@ services:
       ASPNETCORE_URLS: "https://+:8081;http://+:8080"
       ASPNETCORE_Kestrel__Certificates__Default__Path: /https/aspnetapp.pfx
       ASPNETCORE_Kestrel__Certificates__Default__Password: ${CERT_PASSWORD}
-      ApiSettings__BaseUrl: "https://webapi:8081"
+      ApiSettings__BaseUrl: "http://webapi:8080"
+      ApiSettings__PublicUrl: "https://localhost:7072"
     ports:
       - "7200:8081"
     volumes:

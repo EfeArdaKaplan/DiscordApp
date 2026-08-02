@@ -193,7 +193,7 @@
                 User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.NameIdentifier)?.Value));
         window.JWT_TOKEN = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
                             Context.Items["JwtToken"] as string));
-        window.HUB_URL = "@(Configuration["ApiSettings:BaseUrl"])/hubs/chat";
+        window.HUB_URL = "@(Configuration["ApiSettings:PublicUrl"])/hubs/chat";
 
         window.SERVERS_DATA = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
                 Model ?? new List<DiscordApp.WebUI.Models.ServerViewModel>(),

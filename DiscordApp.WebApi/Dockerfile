@@ -8,7 +8,6 @@ COPY Data/Data.csproj Data/
 RUN dotnet nuget locals all --clear
 RUN dotnet restore DiscordApp.WebApi/DiscordApp.WebApi.csproj --no-cache
 
-
 COPY DiscordApp.WebApi/ DiscordApp.WebApi/
 COPY Business/ Business/
 COPY Core/ Core/
@@ -18,9 +17,10 @@ RUN dotnet publish DiscordApp.WebApi/DiscordApp.WebApi.csproj -c Release -o /app
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 
-USER app
-
 COPY --from=build /app/publish .
+RUN mkdir -p /app/wwwroot/uploads/voice && chown -R app:app /app
+
+USER app
 
 EXPOSE 8080
 EXPOSE 8081
