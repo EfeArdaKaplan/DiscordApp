@@ -1,6 +1,10 @@
 # 🎮 DiscordApp — Dağıtık, Gerçek Zamanlı & Uçtan Uca Şifreli İletişim Platformu
 
 <p align="center">
+  <img src="assets/preview.jpg" alt="DiscordApp Social Preview" width="100%" style="border-radius: 8px;" />
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/badge/.NET_10.0-512BD4?style=for-the-badge&logo=dotnet&logoColor=white" alt=".NET 10.0" />
   <img src="https://img.shields.io/badge/C%23_13-239120?style=for-the-badge&logo=csharp&logoColor=white" alt="C# 13" />
   <img src="https://img.shields.io/badge/ASP.NET_Core-512BD4?style=for-the-badge&logo=dotnet&logoColor=white" alt="ASP.NET Core" />
