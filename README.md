@@ -20,6 +20,32 @@
 
 ---
 
+## 🇬🇧 English Summary
+
+**DiscordApp** is a Discord-inspired real-time voice and text messaging platform built with **.NET 10** and a layered architecture. The Turkish documentation below is the full reference.
+
+### Solution layout
+- `Core`, `Data`, `Business`: entities, EF Core persistence and services.
+- `DiscordApp.WebApi`: REST API (23 endpoints: auth, servers, channels, friendships, messages) and a SignalR `ChatHub`.
+- `DiscordApp.WebUI`: ASP.NET Core MVC web client (JavaScript, SignalR client, WebRTC).
+- `DiscordApp.Desktop`: WPF + WebView2 desktop client.
+
+### Highlights
+- **Real time:** SignalR `ChatHub` for channel presence and WebRTC signaling (voice join/leave, offer, answer, ICE candidates).
+- **Voice:** peer-to-peer WebRTC mesh voice channels.
+- **Security:** AES-256-GCM message encryption (`MessageEncryptionService`), JWT authentication, token cookie protection with ASP.NET Data Protection.
+- **Storage:** voice messages stored in MinIO (S3-compatible).
+- **Database:** Entity Framework Core migrations on SQL Server 2022.
+- **Deployment:** Docker Compose (`docker-compose.yml`) with Dockerfiles for the API and the web UI.
+
+### Quick start
+Set the environment variables described in the Turkish setup section below (for example `SA_PASSWORD`), then run:
+```bash
+docker compose up -d --build
+```
+
+---
+
 ## 📌 İçindekiler
 - [Proje Vizyonu ve Genel Bakış](#-proje-vizyonu-ve-genel-bakış)
 - [Sistem ve Mimari Tasarımı](#-sistem-ve-mimari-tasarımı)
